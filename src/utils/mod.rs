@@ -1,3 +1,3 @@
 pub mod binary;
 
-pub use binary::{BinaryReader, BinaryWritter};
+pub use binary::{BinaryReader, BinaryWriter};
