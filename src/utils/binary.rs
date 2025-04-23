@@ -78,7 +78,7 @@ pub trait BinaryReader: Buf {
     #[must_use]
     fn read_u24_le(&mut self) -> Result<u32> {
         check_remaining!(self, 3);
-        Ok(self.get_uint_le(3) as u32) // Read 3 bytes as LE unsigned int
+        Ok(self.get_uint_le(3) as u32)
     }
 
     #[inline]
@@ -86,9 +86,8 @@ pub trait BinaryReader: Buf {
     fn read_i24_le(&mut self) -> Result<i32> {
         check_remaining!(self, 3);
         let uval = self.get_uint_le(3);
-        // Sign extend if the highest bit (bit 23) is set
         Ok(if (uval & 0x00800000) != 0 {
-            (uval | 0xFF000000) as i32 // Cast to i32 after setting higher bits
+            (uval | 0xFF000000) as i32
         } else {
             uval as i32
         })
@@ -394,7 +393,6 @@ pub trait BinaryWriter: BufMut {
 
     #[inline]
     fn write_i24_le(&mut self, value: i32) -> Result<()> {
-        // Could add range check
         self.put_uint_le(value as u64, 3);
         Ok(())
     }
@@ -555,7 +553,6 @@ pub trait BinaryWriter: BufMut {
 
     #[inline]
     fn write_vari64(&mut self, value: i64) -> Result<()> {
-        // ZigZag encode: (n << 1) ^ (n >> 63)
         let unsigned = (value << 1) ^ (value >> 63);
         self.write_varu64(unsigned as u64)
     }
@@ -577,13 +574,11 @@ pub trait BinaryWriter: BufMut {
     }
 
     fn write_uuid_le(&mut self, uuid: &Uuid) -> Result<()> {
-        // Use the uuid crate's built-in LE representation
         self.put_slice(uuid.to_bytes_le().as_slice());
         Ok(())
     }
 
     fn write_uuid_be(&mut self, uuid: &Uuid) -> Result<()> {
-        // Use the uuid crate's default BE representation
         self.put_slice(uuid.as_bytes());
         Ok(())
     }
