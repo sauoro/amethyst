@@ -13,7 +13,6 @@ pub enum Reliability {
 }
 
 impl Reliability {
-    
     #[inline]
     pub fn from_u8(value: u8) -> Option<Self> {
         match value {

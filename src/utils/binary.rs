@@ -38,7 +38,6 @@ macro_rules! check_remaining {
 }
 
 pub trait BinaryReader: Buf {
-    
     #[inline]
     #[must_use]
     fn read_u8(&mut self) -> Result<u8> {
@@ -247,7 +246,7 @@ pub trait BinaryReader: Buf {
         for i in 0..MAX_BYTES {
             check_remaining!(self, 1);
             let byte = self.get_u8();
-            
+
             value |= ((byte & 0x7F) as u32) << shift;
 
             if byte & 0x80 == 0 {
@@ -258,11 +257,12 @@ pub trait BinaryReader: Buf {
             }
 
             shift += 7;
-            if shift > 28 {
-            }
+            if shift > 28 {}
         }
 
-        Err(BinaryError::VarIntTooLong { max_bytes: MAX_BYTES })
+        Err(BinaryError::VarIntTooLong {
+            max_bytes: MAX_BYTES,
+        })
     }
 
     #[inline]
@@ -297,7 +297,9 @@ pub trait BinaryReader: Buf {
             }
         }
 
-        Err(BinaryError::VarIntTooLong { max_bytes: MAX_BYTES })
+        Err(BinaryError::VarIntTooLong {
+            max_bytes: MAX_BYTES,
+        })
     }
 
     #[inline]
@@ -354,7 +356,6 @@ pub trait BinaryReader: Buf {
 impl<T: Buf> BinaryReader for T {}
 
 pub trait BinaryWriter: BufMut {
-
     #[inline]
     fn write_u8(&mut self, value: u8) -> Result<()> {
         self.put_u8(value);
@@ -396,7 +397,7 @@ pub trait BinaryWriter: BufMut {
         self.put_uint_le(value as u64, 3);
         Ok(())
     }
-    
+
     #[inline]
     fn write_u32_le(&mut self, value: u32) -> Result<()> {
         self.put_u32_le(value);
@@ -510,7 +511,7 @@ pub trait BinaryWriter: BufMut {
         self.put_f32(value);
         Ok(())
     }
-    
+
     #[inline]
     fn write_f64_be(&mut self, value: f64) -> Result<()> {
         self.put_f64(value);
@@ -558,7 +559,9 @@ pub trait BinaryWriter: BufMut {
     }
 
     fn write_bytes_varint_len(&mut self, bytes: &[u8]) -> Result<()> {
-        let len = u32::try_from(bytes.len()).map_err(|_| BinaryError::InvalidData("Byte slice length exceeds u32::MAX".to_string()))?;
+        let len = u32::try_from(bytes.len()).map_err(|_| {
+            BinaryError::InvalidData("Byte slice length exceeds u32::MAX".to_string())
+        })?;
         self.write_varu32(len)?;
         self.put_slice(bytes);
         Ok(())
@@ -582,7 +585,6 @@ pub trait BinaryWriter: BufMut {
         self.put_slice(uuid.as_bytes());
         Ok(())
     }
-
 }
 
 impl<T: BufMut> BinaryWriter for T {}

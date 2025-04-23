@@ -1,5 +1,4 @@
-pub mod utils;
 pub mod raknet;
+pub mod utils;
 
-fn main() {
-}
+fn main() {}
