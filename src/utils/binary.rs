@@ -4,10 +4,10 @@
 //! efficiently and safely, tailored for Minecraft Bedrock Edition protocols.
 //!
 //! Uses the `bytes` crate for buffer manipulation.
-//! 
+//!
 //! I know, bytes already have all of that but makes it easier for us to maintain it.
-//! 
-use bytes::{Buf, BufMut, Bytes, BytesMut};
+//!
+use bytes::{Buf, BufMut, Bytes};
 use std::io;
 use std::string::FromUtf8Error;
 use thiserror::Error;
