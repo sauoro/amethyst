@@ -51,7 +51,7 @@ server:
 ```rust
 // We are prototyping
 use amethyst::plugin::Plugin;
-use amethyst::logger::{Log, Logger};
+use amethyst::log::{Log, Logger};
 
 struct MyPlugin;
 
