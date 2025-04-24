@@ -6,6 +6,9 @@
 
 ---
 
+## DISCLAIMER ⚠️
+This is **NOT** a PocketMine-MP ported in Rust, this is a software made from scratch.
+
 ## 🏗️ Status
 
 We’re hard at work on Amethyst! Here’s what’s in progress:
