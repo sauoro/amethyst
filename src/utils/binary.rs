@@ -28,8 +28,7 @@ pub enum BinaryError {
 pub type Result<T> = std::result::Result<T, BinaryError>;
 
 const MAGIC_BYTES: [u8; 16] = [
-    0x00, 0xff, 0xff, 0x00, 0xfe, 0xfe, 0xfe, 0xfe,
-    0xfd, 0xfd, 0xfd, 0xfd, 0x12, 0x34, 0x56, 0x78,
+    0x00, 0xff, 0xff, 0x00, 0xfe, 0xfe, 0xfe, 0xfe, 0xfd, 0xfd, 0xfd, 0xfd, 0x12, 0x34, 0x56, 0x78,
 ];
 
 macro_rules! check_remaining {
@@ -356,7 +355,7 @@ pub trait BinaryReader: Buf {
         self.copy_to_slice(&mut bytes);
         Ok(Uuid::from_bytes(bytes))
     }
-    
+
     fn read_magic(&mut self) -> Result<bool> {
         const MAGIC_LEN: usize = MAGIC_BYTES.len();
         check_remaining!(self, MAGIC_LEN);
@@ -598,7 +597,7 @@ pub trait BinaryWriter: BufMut {
         self.put_slice(uuid.as_bytes());
         Ok(())
     }
-    
+
     fn write_magic(&mut self) -> Result<()> {
         self.put_slice(&MAGIC_BYTES);
         Ok(())
