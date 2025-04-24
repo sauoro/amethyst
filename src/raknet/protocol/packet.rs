@@ -5,6 +5,7 @@ pub struct PacketId {}
 impl PacketId {
     pub const CONNECTED_PING: u8 = 0x00;
     pub const UNCONNECTED_PING: u8 = 0x01;
+    pub const CONNECTED_PONG: u8 = 0x03;
 }
 
 pub trait Packet: Sized {
@@ -90,3 +91,27 @@ impl UnconnectedPing {
 }
 
 implement_packet!(UnconnectedPing, PacketId::UNCONNECTED_PING);
+
+pub struct ConnectedPong {
+    pub client_timestamp: i64,
+    pub server_timestamp: i64,
+}
+
+impl ConnectedPong {
+    pub fn encode(&self, writer: &mut impl BinaryWriter) -> BinaryResult<()> {
+        writer.write_i64_be(self.client_timestamp)?;
+        writer.write_i64_be(self.server_timestamp)?;
+        Ok(())
+    }
+
+    pub fn decode(reader: &mut impl BinaryReader) -> BinaryResult<Self> {
+        let client_timestamp = reader.read_i64_be()?;
+        let server_timestamp = reader.read_i64_be()?;
+        Ok(Self {
+            client_timestamp,
+            server_timestamp,
+        })
+    }
+}
+
+implement_packet!(ConnectedPong, PacketId::CONNECTED_PONG);
