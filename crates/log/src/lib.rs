@@ -1,10 +1,5 @@
 use chrono::Local;
 
-const ANSI_RESET: &str = "\x1b[0m";
-const AMETHYST_COLOR: &str = "\x1b[38;5;171m";
-const YELLOW_COLOR: &str = "\x1b[38;5;226m";
-const RED_COLOR: &str = "\x1b[38;5;196m";
-
 pub struct Logger {
     name: Option<String>,
 }
@@ -18,49 +13,39 @@ impl Logger {
         Self { name: None }
     }
 
-    pub(crate) fn raw_log(&self, msg: &str, l_type: &str, color_format: Option<&str>) {
+    pub(crate) fn raw_log(&self, msg: &str, l_type: &str) {
         let now = Local::now();
-        let timestamp = now.format("%H:%M:%S%.3f");
-        let format = format!("[{} {}]", timestamp, l_type);
-        let color = color_format.unwrap_or_else(|| ANSI_RESET);
+        let timestamp = now.format("%H:%M:%S");
+        let format = format!("({} {})", timestamp, l_type);
         match &self.name {
-            Some(name) => println!(
-                "{}{} {} {}{}",
-                &color,
-                format,
-                format!("[{}]", name),
-                msg,
-                ANSI_RESET
-            ),
-            None => println!(
-                "{}{} {}{}",
-                &color,
-                format,
-                msg,
-                ANSI_RESET
-            ),
+            Some(name) => println!("{} {} {}", format, format!("[{}]", name), msg,),
+            None => println!("{} {}", format, msg,),
         }
     }
 }
 
 pub trait Log {
-    fn log(&self, msg: &str, l_type: &str, color_format: Option<&str>);
+    fn log(&self, msg: &str, l_type: &str);
 
     fn info(&self, msg: &str) {
-        self.log(&msg, "INFO", Some(ANSI_RESET));
+        self.log(&msg, "INFO");
+    }
+
+    fn debug(&self, msg: &str) {
+        self.log(&msg, "DEBUG");
     }
 
     fn warn(&self, msg: &str) {
-        self.log(&msg, "WARN", Some(YELLOW_COLOR));
+        self.log(&msg, "WARN");
     }
 
     fn error(&self, msg: &str) {
-        self.log(&msg, "ERROR", Some(RED_COLOR));
+        self.log(&msg, "ERROR");
     }
 }
 
 impl Log for Logger {
-    fn log(&self, msg: &str, l_type: &str, color_format: Option<&str>) {
-        self.raw_log(msg, l_type, color_format);
+    fn log(&self, msg: &str, l_type: &str) {
+        self.raw_log(msg, l_type);
     }
 }
