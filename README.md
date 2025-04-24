@@ -38,13 +38,11 @@ cargo build --release
 
 Edit `config/server.yaml`:
 
-```yaml
-# This is a concept we are prototyping.
-server:
-  name: "Amethyst"
-  address: "0.0.0.0:19132"
-  motd: "Welcome!"
-  max_players: 50
+```toml
+[server]
+name = "Amethyst"
+address = "0.0.0.0:19132"
+max_players = 50
 ```
 
 ## Create a Simple Plugin

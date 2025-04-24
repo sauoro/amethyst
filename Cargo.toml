@@ -13,3 +13,6 @@ members = [
 [dependencies]
 log = { version = "0.1.0", path = "crates/log" }
 tokio = { version = "1.44.2", features = ["full"] }
+toml = "0.8.20"
+serde = {version = "1.0.219", features = ["derive"]}
+thiserror = "2.0.12"
