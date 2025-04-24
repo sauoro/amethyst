@@ -31,8 +31,7 @@ cd amethyst
 cargo build --release
 
 # Init config & run (prototyping)
-./target/release/amethyst init --output config/
-./target/release/amethyst run --config config/server.yaml
+./target/release/amethyst
 ```
 
 ## 📄 Configuration
@@ -52,6 +51,7 @@ server:
 ```rust
 // We are prototyping
 use amethyst::plugin::Plugin;
+use amethyst::logger::{Log, Logger};
 
 struct MyPlugin;
 
