@@ -312,17 +312,10 @@ pub trait BinaryReader: Buf {
         let unsigned = self.read_varu64()?;
         Ok((unsigned >> 1) as i64 ^ -((unsigned & 1) as i64))
     }
-
-    #[must_use]
-    fn read_bytes_varint_len(&mut self) -> Result<Bytes> {
-        let len = self.read_varu32()? as usize;
-        check_remaining!(self, len);
-        Ok(self.copy_to_bytes(len))
-    }
-
-    #[must_use]
-    fn read_string_varint_len(&mut self) -> Result<String> {
-        let bytes = self.read_bytes_varint_len()?;
+    
+    fn read_string(&mut self) -> Result<(String)> {
+        let len = self.read_u16_be()? as usize;
+        let bytes = self.read_bytes(len)?;
         String::from_utf8(bytes.to_vec()).map_err(BinaryError::from)
     }
 
@@ -570,17 +563,11 @@ pub trait BinaryWriter: BufMut {
         self.write_varu64(unsigned as u64)
     }
 
-    fn write_bytes_varint_len(&mut self, bytes: &[u8]) -> Result<()> {
-        let len = u32::try_from(bytes.len()).map_err(|_| {
-            BinaryError::InvalidData("Byte slice length exceeds u32::MAX".to_string())
-        })?;
-        self.write_varu32(len)?;
-        self.put_slice(bytes);
+    fn write_string(&mut self, body: &str) -> Result<()> {
+        let raw = body.as_bytes();
+        self.put_u16(raw.len() as u16);
+        self.put_slice(raw);
         Ok(())
-    }
-
-    fn write_string_varint_len(&mut self, string: &str) -> Result<()> {
-        self.write_bytes_varint_len(string.as_bytes())
     }
 
     fn write_bytes(&mut self, bytes: &[u8]) -> Result<()> {

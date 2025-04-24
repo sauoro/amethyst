@@ -115,3 +115,29 @@ impl ConnectedPong {
 }
 
 implement_packet!(ConnectedPong, PacketId::CONNECTED_PONG);
+
+pub struct UnconnectedPong {
+    pub server_timestamp: i64,
+    pub server_guid: u64,
+    pub server_name: String,
+}
+
+impl UnconnectedPong {
+    pub fn encode(&self, writer: &mut impl BinaryWriter) -> BinaryResult<()> {
+        writer.write_i64_be(self.server_timestamp)?;
+        writer.write_u64_be(self.server_guid)?;
+        writer.write_magic()?;
+        writer.write_string(&self.server_name)?;
+        Ok(())
+    }
+    
+    pub fn decode(&self, reader: &mut impl BinaryReader) -> BinaryResult<Self> {
+        let server_timestamp = reader.read_i64_be()?;
+        let server_guid = reader.read_u64_be()?;
+        if !reader.read_magic()? {
+            return Err(BinaryError::InvalidData("Invalid magic sequence in UnconnectedPong".into()));
+        }
+        let server_name = reader.read_string()?;
+        Ok(Self { server_timestamp, server_guid, server_name })
+    }
+}
