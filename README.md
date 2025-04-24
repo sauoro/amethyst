@@ -2,7 +2,7 @@
 
 **A High-Performance MCBE Server in Rust** 🦀
 
-[![Crates.io](https://img.shields.io/crates/v/amethyst-server)](https://crates.io/crates/amethyst-server) [![License](https://github.com/sauoro/amethyst/blob/main/LICENSE)](LICENSE)
+[![Crates.io](https://img.shields.io/crates/v/amethyst-server)](https://crates.io/crates/amethyst-server) [![License](https://github.com/sauoro/amethyst/LICENSE)](LICENSE)
 
 ---
 
