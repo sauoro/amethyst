@@ -22,3 +22,5 @@ fn main() {
 
 ## Extra Resources
 > Terminal Colors: [ansi](https://github.com/fidian/ansi)
+> 
+> Logging Inspired by [NetrexMC](https://github.com/NetrexMC/Netrex/tree/master/netrex/src/log)
