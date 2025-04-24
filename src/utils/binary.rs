@@ -1,5 +1,6 @@
 use bytes::{Buf, BufMut, Bytes};
 use std::io;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::string::FromUtf8Error;
 use thiserror::Error;
 use uuid::Uuid;
@@ -312,7 +313,7 @@ pub trait BinaryReader: Buf {
         let unsigned = self.read_varu64()?;
         Ok((unsigned >> 1) as i64 ^ -((unsigned & 1) as i64))
     }
-    
+
     fn read_string(&mut self) -> Result<(String)> {
         let len = self.read_u16_be()? as usize;
         let bytes = self.read_bytes(len)?;
@@ -355,6 +356,38 @@ pub trait BinaryReader: Buf {
         let mut read_buffer = [0u8; MAGIC_LEN];
         self.copy_to_slice(&mut read_buffer);
         Ok(read_buffer == MAGIC_BYTES)
+    }
+
+    fn read_address(&mut self) -> Result<SocketAddr> {
+        let ip_version = self.read_u8()?;
+        match ip_version {
+            4 => {
+                check_remaining!(self, 4 + 2);
+                let b1 = !self.get_u8();
+                let b2 = !self.get_u8();
+                let b3 = !self.get_u8();
+                let b4 = !self.get_u8();
+                let port = self.get_u16();
+                Ok(SocketAddr::new(
+                    IpAddr::V4(Ipv4Addr::new(b1, b2, b3, b4)),
+                    port,
+                ))
+            }
+            6 => {
+                check_remaining!(self, 26);
+                let port = self.read_u16_be()?;
+                let flow_info = self.read_u32_be()?;
+                let mut ip_bytes = [0u8; 16];
+                self.copy_to_slice(&mut ip_bytes);
+                let scope_id = self.read_u32_be()?;
+
+                Ok(SocketAddr::new(IpAddr::V6(Ipv6Addr::from(ip_bytes)), port))
+            }
+            _ => Err(BinaryError::InvalidData(format!(
+                "Unsupported IP version for RakNet address: {}",
+                ip_version
+            ))),
+        }
     }
 }
 
@@ -587,6 +620,27 @@ pub trait BinaryWriter: BufMut {
 
     fn write_magic(&mut self) -> Result<()> {
         self.put_slice(&MAGIC_BYTES);
+        Ok(())
+    }
+
+    fn write_address(&mut self, addr: &SocketAddr) -> Result<()> {
+        match addr {
+            SocketAddr::V4(v4) => {
+                self.write_u8(4)?;
+                let ip_bytes = v4.ip().octets();
+                for byte in ip_bytes {
+                    self.write_u8(!byte)?;
+                }
+                self.write_u16_be(v4.port())?;
+            }
+            SocketAddr::V6(v6) => {
+                self.write_u8(6)?;
+                self.write_u16_be(v6.port())?;
+                self.write_u32_be(v6.flowinfo())?;
+                self.write_bytes(&v6.ip().octets())?;
+                self.write_u32_be(v6.scope_id())?;
+            }
+        }
         Ok(())
     }
 }

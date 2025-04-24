@@ -1,4 +1,5 @@
 use crate::utils::{BinaryError, BinaryReader, BinaryResult, BinaryWriter};
+use std::net::SocketAddr;
 
 pub struct PacketId {}
 
@@ -6,6 +7,12 @@ impl PacketId {
     pub const CONNECTED_PING: u8 = 0x00;
     pub const UNCONNECTED_PING: u8 = 0x01;
     pub const CONNECTED_PONG: u8 = 0x03;
+    pub const UNCONNECTED_PONG: u8 = 0x1c;
+    pub const OPEN_CONNECTION_REQUEST_1: u8 = 0x05;
+    pub const OPEN_CONNECTION_REPLY_1: u8 = 0x06;
+    pub const OPEN_CONNECTION_REQUEST_2: u8 = 0x07;
+    pub const OPEN_CONNECTION_REPLY_2: u8 = 0x08;
+    pub const INCOMPATIBLE_PROTOCOL_VERSION: u8 = 0x19;
 }
 
 pub trait Packet: Sized {
@@ -44,6 +51,7 @@ macro_rules! implement_packet {
     };
 }
 
+#[derive(Debug, Clone)]
 pub struct ConnectedPing {
     pub client_timestamp: i64,
 }
@@ -59,9 +67,9 @@ impl ConnectedPing {
         Ok(Self { client_timestamp })
     }
 }
-
 implement_packet!(ConnectedPing, PacketId::CONNECTED_PING);
 
+#[derive(Debug, Clone)]
 pub struct UnconnectedPing {
     pub client_timestamp: i64,
     pub client_guid: u64,
@@ -89,9 +97,9 @@ impl UnconnectedPing {
         })
     }
 }
-
 implement_packet!(UnconnectedPing, PacketId::UNCONNECTED_PING);
 
+#[derive(Debug, Clone)]
 pub struct ConnectedPong {
     pub client_timestamp: i64,
     pub server_timestamp: i64,
@@ -113,9 +121,9 @@ impl ConnectedPong {
         })
     }
 }
-
 implement_packet!(ConnectedPong, PacketId::CONNECTED_PONG);
 
+#[derive(Debug, Clone)]
 pub struct UnconnectedPong {
     pub server_timestamp: i64,
     pub server_guid: u64,
@@ -130,14 +138,185 @@ impl UnconnectedPong {
         writer.write_string(&self.server_name)?;
         Ok(())
     }
-    
-    pub fn decode(&self, reader: &mut impl BinaryReader) -> BinaryResult<Self> {
+
+    pub fn decode(reader: &mut impl BinaryReader) -> BinaryResult<Self> {
         let server_timestamp = reader.read_i64_be()?;
         let server_guid = reader.read_u64_be()?;
         if !reader.read_magic()? {
-            return Err(BinaryError::InvalidData("Invalid magic sequence in UnconnectedPong".into()));
+            return Err(BinaryError::InvalidData(
+                "Invalid magic sequence in UnconnectedPong".into(),
+            ));
         }
         let server_name = reader.read_string()?;
-        Ok(Self { server_timestamp, server_guid, server_name })
+        Ok(Self {
+            server_timestamp,
+            server_guid,
+            server_name,
+        })
     }
 }
+implement_packet!(UnconnectedPong, PacketId::UNCONNECTED_PONG);
+
+#[derive(Debug, Clone)]
+pub struct OpenConnectionRequest1 {
+    pub protocol_version: u8,
+}
+
+impl OpenConnectionRequest1 {
+    pub fn encode(&self, writer: &mut impl BinaryWriter) -> BinaryResult<()> {
+        writer.write_magic()?;
+        writer.write_u8(self.protocol_version)?;
+        Ok(())
+    }
+
+    pub fn decode(reader: &mut impl BinaryReader) -> BinaryResult<Self> {
+        if !reader.read_magic()? {
+            return Err(BinaryError::InvalidData(
+                "Invalid magic sequence in OpenConnectionRequest1".into(),
+            ));
+        }
+        let protocol_version = reader.read_u8()?;
+        reader.advance(reader.remaining());
+        Ok(Self { protocol_version })
+    }
+}
+implement_packet!(OpenConnectionRequest1, PacketId::OPEN_CONNECTION_REQUEST_1);
+
+#[derive(Debug, Clone)]
+pub struct OpenConnectionReply1 {
+    pub server_guid: u64,
+    pub security: bool,
+    pub mtu_size: u16,
+}
+
+impl OpenConnectionReply1 {
+    pub fn encode(&self, writer: &mut impl BinaryWriter) -> BinaryResult<()> {
+        writer.write_magic()?;
+        writer.write_u64_be(self.server_guid)?;
+        writer.write_bool(self.security)?;
+        writer.write_u16_be(self.mtu_size)?;
+        Ok(())
+    }
+
+    pub fn decode(reader: &mut impl BinaryReader) -> BinaryResult<Self> {
+        if !reader.read_magic()? {
+            return Err(BinaryError::InvalidData(
+                "Invalid magic sequence in OpenConnectionReply1".into(),
+            ));
+        }
+        let server_guid = reader.read_u64_be()?;
+        let security = reader.read_bool()?;
+        let mtu_size = reader.read_u16_be()?;
+        Ok(Self {
+            server_guid,
+            security,
+            mtu_size,
+        })
+    }
+}
+implement_packet!(OpenConnectionReply1, PacketId::OPEN_CONNECTION_REPLY_1);
+
+#[derive(Debug, Clone)]
+pub struct OpenConnectionRequest2 {
+    pub server_address_ignored: SocketAddr,
+    pub mtu_size: u16,
+    pub client_guid: u64,
+}
+
+impl OpenConnectionRequest2 {
+    pub fn encode(&self, writer: &mut impl BinaryWriter) -> BinaryResult<()> {
+        writer.write_magic()?;
+        writer.write_address(&self.server_address_ignored)?;
+        writer.write_u16_be(self.mtu_size)?;
+        writer.write_u64_be(self.client_guid)?;
+        Ok(())
+    }
+
+    pub fn decode(reader: &mut impl BinaryReader) -> BinaryResult<Self> {
+        if !reader.read_magic()? {
+            return Err(BinaryError::InvalidData(
+                "Invalid magic sequence in OpenConnectionRequest2".into(),
+            ));
+        }
+        let server_address_ignored = reader.read_address()?;
+        let mtu_size = reader.read_u16_be()?;
+        let client_guid = reader.read_u64_be()?;
+        Ok(Self {
+            server_address_ignored,
+            mtu_size,
+            client_guid,
+        })
+    }
+}
+implement_packet!(OpenConnectionRequest2, PacketId::OPEN_CONNECTION_REQUEST_2);
+
+#[derive(Debug, Clone)]
+pub struct OpenConnectionReply2 {
+    pub server_guid: u64,
+    pub client_address: SocketAddr,
+    pub mtu_size: u16,
+    pub security: bool,
+}
+
+impl OpenConnectionReply2 {
+    pub fn encode(&self, writer: &mut impl BinaryWriter) -> BinaryResult<()> {
+        writer.write_magic()?;
+        writer.write_u64_be(self.server_guid)?;
+        writer.write_address(&self.client_address)?;
+        writer.write_u16_be(self.mtu_size)?;
+        writer.write_bool(self.security)?;
+        Ok(())
+    }
+
+    pub fn decode(reader: &mut impl BinaryReader) -> BinaryResult<Self> {
+        if !reader.read_magic()? {
+            return Err(BinaryError::InvalidData(
+                "Invalid magic sequence in OpenConnectionReply2".into(),
+            ));
+        }
+        let server_guid = reader.read_u64_be()?;
+        let client_address = reader.read_address()?;
+        let mtu_size = reader.read_u16_be()?;
+        let security = reader.read_bool()?;
+        Ok(Self {
+            server_guid,
+            client_address,
+            mtu_size,
+            security,
+        })
+    }
+}
+implement_packet!(OpenConnectionReply2, PacketId::OPEN_CONNECTION_REPLY_2);
+
+#[derive(Debug, Clone)]
+pub struct IncompatibleProtocolVersion {
+    pub protocol_version: u8,
+    pub server_guid: u64,
+}
+
+impl IncompatibleProtocolVersion {
+    pub fn encode(&self, writer: &mut impl BinaryWriter) -> BinaryResult<()> {
+        writer.write_u8(self.protocol_version)?;
+        writer.write_magic()?;
+        writer.write_u64_be(self.server_guid)?;
+        Ok(())
+    }
+
+    pub fn decode(reader: &mut impl BinaryReader) -> BinaryResult<Self> {
+        let protocol_version = reader.read_u8()?;
+        if !reader.read_magic()? {
+            return Err(BinaryError::InvalidData(
+                "Invalid magic sequence in IncompatibleProtocolVersion".into(),
+            ));
+        }
+        let server_guid = reader.read_u64_be()?;
+        Ok(Self {
+            protocol_version,
+            server_guid,
+        })
+    }
+}
+implement_packet!(
+    IncompatibleProtocolVersion,
+    PacketId::INCOMPATIBLE_PROTOCOL_VERSION
+);
