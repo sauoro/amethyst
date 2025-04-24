@@ -45,6 +45,25 @@ server:
   max_players: 50
 ```
 
+## Create a Simple Plugin
+```rust
+// We are prototyping
+use amethyst::plugin::Plugin;
+
+struct MyPlugin;
+
+impl Plugin for MyPlugin {
+    fn on_enable(&self) -> Result<()> {
+        self.logger.info("This is an example plugin");
+        Ok()
+    }
+
+    fn on_disable(&self) -> Result<()> {
+        self.logger.info("MyPlugin has been disabled");
+        Ok()
+    }
+}
+```
 ## 📝 Roadmap
 
 **What we’re working on next:**
