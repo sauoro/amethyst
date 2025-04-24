@@ -30,46 +30,26 @@ git clone https://github.com/sauoro/amethyst.git
 cd amethyst
 cargo build --release
 
-# Init config & run (prototyping)
 ./target/release/amethyst
 ```
 
 ## 📄 Configuration
 
-Edit `config/server.yaml`:
+Edit `config.toml`:
 
 ```toml
+[network]
+address = "0.0.0.0:19132"
+
 [server]
 name = "Amethyst"
-address = "0.0.0.0:19132"
 max_players = 50
 ```
 
-## Create a Simple Plugin
-```rust
-// We are prototyping
-use amethyst::plugin::Plugin;
-use amethyst::log::{Log, Logger};
-
-struct MyPlugin;
-
-impl Plugin for MyPlugin {
-    fn on_enable(&self) -> Result<()> {
-        self.logger.info("This is an example plugin");
-        Ok()
-    }
-
-    fn on_disable(&self) -> Result<()> {
-        self.logger.info("MyPlugin has been disabled");
-        Ok()
-    }
-}
-```
 ## 📝 Roadmap
 
 **What we’re working on next:**
 
-- [ ] Plugin Marketplace 🛒
 - [ ] World Import/Export Tool 🌍
 - [ ] Real-time Chat Moderation 💬
 - [ ] Automatic Backups 🔄
