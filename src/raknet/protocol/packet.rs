@@ -17,6 +17,8 @@ impl PacketId {
     pub const CONNECTION_REQUEST_ACCEPTED: u8 = 0x10;
     pub const NEW_INCOMING_CONNECTION: u8 = 0x13;
     pub const DISCONNECTION_NOTIFICATION: u8 = 0x15;
+    pub const ACK: u8 = 0xc0;
+    pub const NACK: u8 = 0xa0;
 }
 
 pub trait Packet: Sized {
@@ -320,8 +322,10 @@ impl IncompatibleProtocolVersion {
         })
     }
 }
-implement_packet!(IncompatibleProtocolVersion,PacketId::INCOMPATIBLE_PROTOCOL_VERSION);
-
+implement_packet!(
+    IncompatibleProtocolVersion,
+    PacketId::INCOMPATIBLE_PROTOCOL_VERSION
+);
 
 #[derive(Debug, Clone)]
 pub struct ConnectionRequest {
@@ -342,11 +346,14 @@ impl ConnectionRequest {
         let client_guid = reader.read_u64_be()?;
         let request_timestamp = reader.read_i64_be()?;
         let use_security = reader.read_bool()?;
-        Ok(Self { client_guid, request_timestamp, use_security })
+        Ok(Self {
+            client_guid,
+            request_timestamp,
+            use_security,
+        })
     }
 }
 implement_packet!(ConnectionRequest, PacketId::CONNECTION_REQUEST);
-
 
 #[derive(Debug, Clone)]
 pub struct ConnectionRequestAccepted {
@@ -357,7 +364,10 @@ pub struct ConnectionRequestAccepted {
 }
 
 impl ConnectionRequestAccepted {
-    const PADDING_ADDRESS: SocketAddr = SocketAddr::V4(std::net::SocketAddrV4::new(std::net::Ipv4Addr::new(255, 255, 255, 255), 19132));
+    const PADDING_ADDRESS: SocketAddr = SocketAddr::V4(std::net::SocketAddrV4::new(
+        std::net::Ipv4Addr::new(255, 255, 255, 255),
+        19132,
+    ));
 
     pub fn encode(&self, writer: &mut impl BinaryWriter) -> BinaryResult<()> {
         writer.write_address(&self.client_address)?;
@@ -379,11 +389,18 @@ impl ConnectionRequestAccepted {
         }
         let request_timestamp = reader.read_i64_be()?;
         let accepted_timestamp = reader.read_i64_be()?;
-        Ok(Self { client_address, system_index, request_timestamp, accepted_timestamp })
+        Ok(Self {
+            client_address,
+            system_index,
+            request_timestamp,
+            accepted_timestamp,
+        })
     }
 }
-implement_packet!(ConnectionRequestAccepted, PacketId::CONNECTION_REQUEST_ACCEPTED);
-
+implement_packet!(
+    ConnectionRequestAccepted,
+    PacketId::CONNECTION_REQUEST_ACCEPTED
+);
 
 #[derive(Debug, Clone)]
 pub struct NewIncomingConnection {
@@ -393,7 +410,10 @@ pub struct NewIncomingConnection {
 }
 
 impl NewIncomingConnection {
-    const PADDING_ADDRESS: SocketAddr = SocketAddr::V4(std::net::SocketAddrV4::new(std::net::Ipv4Addr::new(0, 0, 0, 0), 0));
+    const PADDING_ADDRESS: SocketAddr = SocketAddr::V4(std::net::SocketAddrV4::new(
+        std::net::Ipv4Addr::new(0, 0, 0, 0),
+        0,
+    ));
 
     pub fn encode(&self, writer: &mut impl BinaryWriter) -> BinaryResult<()> {
         writer.write_address(&self.server_address)?;
@@ -414,11 +434,14 @@ impl NewIncomingConnection {
         }
         let request_timestamp = reader.read_i64_be()?;
         let accepted_timestamp = reader.read_i64_be()?;
-        Ok(Self { server_address, request_timestamp, accepted_timestamp })
+        Ok(Self {
+            server_address,
+            request_timestamp,
+            accepted_timestamp,
+        })
     }
 }
 implement_packet!(NewIncomingConnection, PacketId::NEW_INCOMING_CONNECTION);
-
 
 #[derive(Debug, Clone)]
 pub struct DisconnectionNotification;
@@ -432,4 +455,7 @@ impl DisconnectionNotification {
         Ok(Self)
     }
 }
-implement_packet!(DisconnectionNotification, PacketId::DISCONNECTION_NOTIFICATION);
+implement_packet!(
+    DisconnectionNotification,
+    PacketId::DISCONNECTION_NOTIFICATION
+);
