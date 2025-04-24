@@ -1,53 +1,66 @@
 use chrono::Local;
 
+const ANSI_RESET: &str = "\x1b[0m";
+const AMETHYST_COLOR: &str = "\x1b[38;5;171m";
+const YELLOW_COLOR: &str = "\x1b[38;5;226m";
+const RED_COLOR: &str = "\x1b[38;5;196m";
+
 pub struct Logger {
     name: Option<String>,
 }
 
 impl Logger {
     pub fn new(name: String) -> Self {
-        Self {
-            name: Some(name),
-        }
+        Self { name: Some(name) }
     }
-    
+
     pub fn nameless() -> Self {
         Self { name: None }
     }
-    
 
-    pub(crate) fn raw_log(&self, msg: &str) {
+    pub(crate) fn raw_log(&self, msg: &str, l_type: &str, color_format: Option<&str>) {
         let now = Local::now();
-        let timestamp = now.format("[%H:%M:%S%.3f]");
-        let formatted_timestamp = format!("{}{}{}", "\x1b[38;5;45m", timestamp, "\x1b[0m");
+        let timestamp = now.format("%H:%M:%S%.3f");
+        let format = format!("[{} {}]", timestamp, l_type);
+        let color = color_format.unwrap_or_else(|| ANSI_RESET);
         match &self.name {
-            Some(name) => println!("{} {} {}", formatted_timestamp, format!("{}{}{}{}{}", "\x1b[38;5;171m", "[", name, "]", "\x1b[0m"), msg),
-            None => println!("{} {}", formatted_timestamp, msg),
+            Some(name) => println!(
+                "{}{} {} {}{}",
+                &color,
+                format,
+                format!("[{}]", name),
+                msg,
+                ANSI_RESET
+            ),
+            None => println!(
+                "{}{} {}{}",
+                &color,
+                format,
+                msg,
+                ANSI_RESET
+            ),
         }
     }
 }
 
 pub trait Log {
-    fn log(&self, msg: &str);
-    
+    fn log(&self, msg: &str, l_type: &str, color_format: Option<&str>);
+
     fn info(&self, msg: &str) {
-        let formatted_message = format!("{}[INFO] {}{}", "\x1b[1;32m", msg, "\x1b[0m");
-        self.log(&formatted_message);
+        self.log(&msg, "INFO", Some(ANSI_RESET));
     }
-    
+
     fn warn(&self, msg: &str) {
-        let formatted_message = format!("{}[WARN] {}{}", "\x1b[1;33m", msg, "\x1b[0m");
-        self.log(&formatted_message);
+        self.log(&msg, "WARN", Some(YELLOW_COLOR));
     }
-    
+
     fn error(&self, msg: &str) {
-        let formatted_message = format!("{}[ERROR] {}{}", "\x1b[1;31m", msg, "\x1b[0m");
-        self.log(&formatted_message);
+        self.log(&msg, "ERROR", Some(RED_COLOR));
     }
 }
 
 impl Log for Logger {
-    fn log(&self, msg: &str) {
-        self.raw_log(msg);
+    fn log(&self, msg: &str, l_type: &str, color_format: Option<&str>) {
+        self.raw_log(msg, l_type, color_format);
     }
 }
