@@ -3,6 +3,10 @@ pub mod frame;
 pub mod packet;
 pub mod reliability;
 
+pub use reliability::Reliability;
+pub use frame::{FramePacket};
+pub use ack::{AckNakPacket};
+
 use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum RaknetError {
