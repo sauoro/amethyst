@@ -9,12 +9,13 @@ pub use packet::*;
 pub use reliability::Reliability;
 
 use thiserror::Error;
+
 #[derive(Error, Debug)]
 pub enum RaknetError {
     #[error("Packet parsing error: {0}")]
     PacketParseError(String),
     #[error("Incompatible RakNet protocol version: client={client}, server supports={server:?}")]
-    IncompatibleProtocolVersion { client: u8, server: &'static [u8] },
+    IncompatibleProtocolVersion { client: u8, server: &'static u8 },
     #[error("Invalid packet ID encountered: {0}")]
     InvalidPacketId(u8),
     #[error("Invalid reliability flags: {0}")]
