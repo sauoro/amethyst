@@ -1,6 +1,6 @@
-use super::{reliability::Reliability, RaknetError, Result as RaknetResult};
-use crate::check_remaining;
-use crate::utils::{BinaryError, BinaryReader, BinaryResult, BinaryWriter};
+use crate::{reliability::Reliability, RaknetError, Result as RaknetResult};
+use binary::check_remaining;
+use binary::{BinaryError, BinaryReader, BinaryResult, BinaryWriter};
 use bytes::Bytes;
 
 #[derive(Debug, Clone)]

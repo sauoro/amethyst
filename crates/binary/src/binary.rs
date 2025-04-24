@@ -315,7 +315,7 @@ pub trait BinaryReader: Buf {
         Ok((unsigned >> 1) as i64 ^ -((unsigned & 1) as i64))
     }
 
-    fn read_string(&mut self) -> Result<(String)> {
+    fn read_string(&mut self) -> Result<String> {
         let len = self.read_u16_be()? as usize;
         let bytes = self.read_bytes(len)?;
         String::from_utf8(bytes.to_vec()).map_err(BinaryError::from)
@@ -377,10 +377,10 @@ pub trait BinaryReader: Buf {
             6 => {
                 check_remaining!(self, 26);
                 let port = self.read_u16_be()?;
-                let flow_info = self.read_u32_be()?;
+                let _flow_info = self.read_u32_be()?;
                 let mut ip_bytes = [0u8; 16];
                 self.copy_to_slice(&mut ip_bytes);
-                let scope_id = self.read_u32_be()?;
+                let _scope_id = self.read_u32_be()?;
 
                 Ok(SocketAddr::new(IpAddr::V6(Ipv6Addr::from(ip_bytes)), port))
             }

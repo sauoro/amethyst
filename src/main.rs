@@ -1,14 +1,7 @@
-pub mod utils;
-pub mod raknet;
-
-use raknet::protocol::packet::{
-    Packet, PacketId, UnconnectedPing, UnconnectedPong,
-};
-use utils::{BinaryReader, BinaryWriter};
 use bytes::{Bytes, BytesMut};
+use raknet::{Packet, PacketId, UnconnectedPing, UnconnectedPong};
 use rand::Rng;
 use std::net::SocketAddr;
-use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::net::UdpSocket;
 use tracing::{error, info, warn, Level};
 use tracing_subscriber;
@@ -27,7 +20,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let socket = UdpSocket::bind(bind_addr).await?;
     info!("Server listening on {}", bind_addr);
 
-    let server_guid: u64 = rand::thread_rng().random();
+    let server_guid: u64 = rand::rng().random();
     info!("Server GUID: {}", server_guid);
 
     let mut recv_buf = BytesMut::with_capacity(2048);
@@ -68,8 +61,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         MINECRAFT_VERSION,
                         CURRENT_PLAYERS,
                         MAX_PLAYERS,
-                        server_guid, // Server GUID (must match pong)
-                        "Amethyst",     // Default world name
+                        server_guid,      // Server GUID (must match pong)
+                        "Amethyst",       // Default world name
                         bind_addr.port(), // IPv4 Port
                         bind_addr.port()  // IPv6 Port (can be same)
                     );

@@ -1,4 +1,4 @@
-use crate::utils::{BinaryError, BinaryReader, BinaryResult, BinaryWriter};
+use binary::{BinaryError, BinaryReader, BinaryResult, BinaryWriter};
 use std::net::SocketAddr;
 
 pub struct PacketId {}

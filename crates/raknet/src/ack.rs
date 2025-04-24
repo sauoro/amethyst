@@ -1,6 +1,6 @@
-use super::packet::PacketId;
-use crate::check_remaining;
-use crate::utils::{BinaryError, BinaryReader, BinaryResult, BinaryWriter};
+use crate::packet::PacketId;
+use binary::check_remaining;
+use binary::{BinaryError, BinaryReader, BinaryResult, BinaryWriter};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AckRecord {
