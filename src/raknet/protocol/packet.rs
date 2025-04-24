@@ -13,6 +13,10 @@ impl PacketId {
     pub const OPEN_CONNECTION_REQUEST_2: u8 = 0x07;
     pub const OPEN_CONNECTION_REPLY_2: u8 = 0x08;
     pub const INCOMPATIBLE_PROTOCOL_VERSION: u8 = 0x19;
+    pub const CONNECTION_REQUEST: u8 = 0x09;
+    pub const CONNECTION_REQUEST_ACCEPTED: u8 = 0x10;
+    pub const NEW_INCOMING_CONNECTION: u8 = 0x13;
+    pub const DISCONNECTION_NOTIFICATION: u8 = 0x15;
 }
 
 pub trait Packet: Sized {
@@ -316,7 +320,116 @@ impl IncompatibleProtocolVersion {
         })
     }
 }
-implement_packet!(
-    IncompatibleProtocolVersion,
-    PacketId::INCOMPATIBLE_PROTOCOL_VERSION
-);
+implement_packet!(IncompatibleProtocolVersion,PacketId::INCOMPATIBLE_PROTOCOL_VERSION);
+
+
+#[derive(Debug, Clone)]
+pub struct ConnectionRequest {
+    pub client_guid: u64,
+    pub request_timestamp: i64,
+    pub use_security: bool,
+}
+
+impl ConnectionRequest {
+    pub fn encode(&self, writer: &mut impl BinaryWriter) -> BinaryResult<()> {
+        writer.write_u64_be(self.client_guid)?;
+        writer.write_i64_be(self.request_timestamp)?;
+        writer.write_bool(self.use_security)?;
+        Ok(())
+    }
+
+    pub fn decode(reader: &mut impl BinaryReader) -> BinaryResult<Self> {
+        let client_guid = reader.read_u64_be()?;
+        let request_timestamp = reader.read_i64_be()?;
+        let use_security = reader.read_bool()?;
+        Ok(Self { client_guid, request_timestamp, use_security })
+    }
+}
+implement_packet!(ConnectionRequest, PacketId::CONNECTION_REQUEST);
+
+
+#[derive(Debug, Clone)]
+pub struct ConnectionRequestAccepted {
+    pub client_address: SocketAddr,
+    pub system_index: u16,
+    pub request_timestamp: i64,
+    pub accepted_timestamp: i64,
+}
+
+impl ConnectionRequestAccepted {
+    const PADDING_ADDRESS: SocketAddr = SocketAddr::V4(std::net::SocketAddrV4::new(std::net::Ipv4Addr::new(255, 255, 255, 255), 19132));
+
+    pub fn encode(&self, writer: &mut impl BinaryWriter) -> BinaryResult<()> {
+        writer.write_address(&self.client_address)?;
+        writer.write_u16_be(self.system_index)?;
+        for _ in 0..10 {
+            writer.write_address(&Self::PADDING_ADDRESS)?;
+        }
+        writer.write_i64_be(self.request_timestamp)?;
+        writer.write_i64_be(self.accepted_timestamp)?;
+        Ok(())
+    }
+
+    pub fn decode(reader: &mut impl BinaryReader) -> BinaryResult<Self> {
+        let client_address = reader.read_address()?;
+        let system_index = reader.read_u16_be()?;
+        // Apparently, after researching, normal RakNet uses 10, but MC-BE uses 20.
+        for _ in 0..20 {
+            let _ = reader.read_address()?;
+        }
+        let request_timestamp = reader.read_i64_be()?;
+        let accepted_timestamp = reader.read_i64_be()?;
+        Ok(Self { client_address, system_index, request_timestamp, accepted_timestamp })
+    }
+}
+implement_packet!(ConnectionRequestAccepted, PacketId::CONNECTION_REQUEST_ACCEPTED);
+
+
+#[derive(Debug, Clone)]
+pub struct NewIncomingConnection {
+    pub server_address: SocketAddr,
+    pub request_timestamp: i64,
+    pub accepted_timestamp: i64,
+}
+
+impl NewIncomingConnection {
+    const PADDING_ADDRESS: SocketAddr = SocketAddr::V4(std::net::SocketAddrV4::new(std::net::Ipv4Addr::new(0, 0, 0, 0), 0));
+
+    pub fn encode(&self, writer: &mut impl BinaryWriter) -> BinaryResult<()> {
+        writer.write_address(&self.server_address)?;
+        // Apparently, after researching, normal RakNet uses 10, but MC-BE uses 20.
+        for _ in 0..20 {
+            writer.write_address(&Self::PADDING_ADDRESS)?;
+        }
+        writer.write_i64_be(self.request_timestamp)?;
+        writer.write_i64_be(self.accepted_timestamp)?;
+        Ok(())
+    }
+
+    pub fn decode(reader: &mut impl BinaryReader) -> BinaryResult<Self> {
+        let server_address = reader.read_address()?;
+        // Apparently, after researching, normal RakNet uses 10, but MC-BE uses 20.
+        for _ in 0..20 {
+            let _ = reader.read_address()?;
+        }
+        let request_timestamp = reader.read_i64_be()?;
+        let accepted_timestamp = reader.read_i64_be()?;
+        Ok(Self { server_address, request_timestamp, accepted_timestamp })
+    }
+}
+implement_packet!(NewIncomingConnection, PacketId::NEW_INCOMING_CONNECTION);
+
+
+#[derive(Debug, Clone)]
+pub struct DisconnectionNotification;
+
+impl DisconnectionNotification {
+    pub fn encode(&self, _writer: &mut impl BinaryWriter) -> BinaryResult<()> {
+        Ok(())
+    }
+
+    pub fn decode(_reader: &mut impl BinaryReader) -> BinaryResult<Self> {
+        Ok(Self)
+    }
+}
+implement_packet!(DisconnectionNotification, PacketId::DISCONNECTION_NOTIFICATION);
