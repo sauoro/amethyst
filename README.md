@@ -23,8 +23,8 @@ cd amethyst
 cargo build --release
 
 # Init config & run (prototyping)
-./target/release/amethyst-server init --output config/
-./target/release/amethyst-server run --config config/server.yaml
+./target/release/amethyst init --output config/
+./target/release/amethyst run --config config/server.yaml
 ```
 
 
