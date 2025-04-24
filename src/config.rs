@@ -49,9 +49,9 @@ impl Default for Config {
     }
 }
 
-pub fn load_or_create() -> Result<Config> {
+pub fn initialize() -> Result<Config> {
     let logger: Logger = Logger::nameless();
-    
+
     let config_path = PathBuf::from(CONFIG_FILE_NAME);
 
     if config_path.exists() {

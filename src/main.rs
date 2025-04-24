@@ -5,7 +5,7 @@ use log::{Log, Logger};
 async fn main() {
     let logger = Logger::nameless();
 
-    let config = match config::load_or_create() {
+    let config = match config::initialize() {
         Ok(cfg) => {
             logger.info("Configuration loaded successfully.");
             cfg
