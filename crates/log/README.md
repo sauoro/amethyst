@@ -1,2 +1,2 @@
 # Logging
-![img.png](https://github.com/sauoro/amethyst/assets/log_test.png)
+![img.png](https://github.com/sauoro/amethyst/blob/main/assets/log_test.png)
