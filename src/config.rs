@@ -1,9 +1,10 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::{self, Write};
+use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use thiserror::Error;
-use log::{Log, Logger};
 
 const CONFIG_FILE_NAME: &str = "config.toml";
 
@@ -17,7 +18,10 @@ pub enum ConfigError {
 
     #[error("TOML serialization error: {0}")]
     TomlSer(#[from] toml::ser::Error),
-
+    
+    #[error("Configuration validation failed: {0}")]
+    Validation(String),
+    
     #[error("Failed to get current directory: {0}")]
     CurrentDir(io::Error),
 }
@@ -27,45 +31,82 @@ pub type Result<T> = std::result::Result<T, ConfigError>;
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Config {
+    pub network: NetworkConfig,
     pub server: ServerConfig,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct NetworkConfig {
+    pub address: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ServerConfig {
     pub name: String,
-    pub bind_address: String,
     pub max_players: u32,
+}
+
+impl Default for NetworkConfig {
+    fn default() -> Self {
+        Self {
+            address: "0.0.0.0:19132".to_string(),
+        }
+    }
+}
+
+impl Default for ServerConfig {
+    fn default() -> Self {
+        Self {
+            name: "Amethyst".to_string(),
+            max_players: 50,
+        }
+    }
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
-            server: ServerConfig {
-                name: "Amethyst".to_string(),
-                bind_address: "0.0.0.0:19132".to_string(),
-                max_players: 50,
-            },
+            network: NetworkConfig::default(),
+            server: ServerConfig::default(),
         }
     }
 }
 
-pub fn initialize() -> Result<Config> {
-    let logger: Logger = Logger::nameless();
+impl Config {
+    pub fn validate(&self) -> Result<()> {
+        if SocketAddr::from_str(&self.network.address).is_err() {
+            return Err(ConfigError::Validation(format!(
+                "Invalid network address format: '{}'. Expected format like 'IP:PORT'.",
+                self.network.address
+            )));
+        }
 
+        if self.server.name.trim().is_empty() {
+            return Err(ConfigError::Validation(
+                "Server name cannot be empty.".to_string(),
+            ));
+        }
+
+        if self.server.max_players == 0 {
+            return Err(ConfigError::Validation(
+                "Maximum players must be greater than 0.".to_string(),
+            ));
+        }
+
+        Ok(())
+    }
+}
+
+pub fn handle() -> Result<Config> {
     let config_path = PathBuf::from(CONFIG_FILE_NAME);
-
     if config_path.exists() {
         let config_content = fs::read_to_string(&config_path)?;
         let config: Config = toml::from_str(&config_content)?;
+        config.validate()?;
         Ok(config)
     } else {
-        logger.info(format!(
-            "Configuration file '{}' not found. Creating default configuration.",
-            CONFIG_FILE_NAME
-        ).as_str());
         let config = Config::default();
         save(&config, &config_path)?;
-        logger.info(format!("Default configuration saved to '{}'.", CONFIG_FILE_NAME).as_str());
         Ok(config)
     }
 }
