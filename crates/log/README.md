@@ -19,3 +19,6 @@ fn main() {
 
 ## Terminal:
 ![img.png](https://github.com/sauoro/amethyst/blob/main/assets/log_test.png)
+
+## Extra Resources
+> Terminal Colors: [ansi](https://github.com/fidian/ansi)
