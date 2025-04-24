@@ -1,5 +1,5 @@
 # Logging
-Example usage:
+## Example usage:
 ```rust
 use log::{Log, Logger};
 
@@ -16,4 +16,6 @@ fn main() {
     nameless_logger.error("Bye");
 }
 ```
+
+## Terminal:
 ![img.png](https://github.com/sauoro/amethyst/blob/main/assets/log_test.png)
