@@ -9,6 +9,9 @@
 ## ⚠️ DISCLAIMER
 This is **NOT** a PocketMine-MP ported in Rust, this is a software made from scratch.
 Please don't use this in production, this is still in early development.
+
+## 🤖 Community
+Join our Discord Server [Discord](https://discord.gg/hSTcSRcNcQ) if you want to be part of this massive project!
 ## 🏗️ Status
 
 We’re hard at work on Amethyst! Here’s what’s in progress:
