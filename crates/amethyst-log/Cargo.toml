@@ -9,6 +9,3 @@ chrono.workspace = true
 
 [lints]
 workspace = true
-
-[lib]
-path = "src/amethyst_log.rs"

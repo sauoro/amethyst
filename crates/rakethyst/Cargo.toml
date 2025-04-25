@@ -7,7 +7,4 @@ license = "MIT"
 [lints]
 workspace = true
 
-[lib]
-path = "src/rakethyst.rs"
-
 [dependencies]
