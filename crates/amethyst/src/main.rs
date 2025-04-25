@@ -5,7 +5,7 @@ pub mod config;
 
 #[tokio::main]
 async fn main() -> Result<(), SetLoggerError> {
-    let _ = set_logger(&lib::AMETHYST_LOGGER);
+    let _ = set_logger(&amethyst_log::AMETHYST_LOGGER);
     set_max_level(log::LevelFilter::Info);
     
     let start_time = Instant::now();
