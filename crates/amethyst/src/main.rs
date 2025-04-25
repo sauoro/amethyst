@@ -17,5 +17,9 @@ async fn main() {
     let server_name = &config.server.name;
     let elapsed_duration = start_time.elapsed();
 
-    println!("{}'s loading done in {:.2}s", server_name, elapsed_duration.as_secs_f64());
+    println!(
+        "{}'s loading done in {:.2}s",
+        server_name,
+        elapsed_duration.as_secs_f64()
+    );
 }
