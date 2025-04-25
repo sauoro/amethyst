@@ -1,0 +1,14 @@
+[package]
+name = "amethyst-log"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+log.workspace = true
+chrono.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+path = "src/amethyst_log.rs"

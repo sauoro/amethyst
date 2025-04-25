@@ -3,13 +3,13 @@ resolver = "2"
 members = [
     "crates/amethyst",
     "crates/amethyst-binary",
+    "crates/amethyst-log",
     "crates/rakethyst"
 ]
 
 default-members = ["crates/amethyst"]
 
 [workspace.package]
-name = "amethyst"
 version = "0.1.0"
 edition = "2024"
 
@@ -19,7 +19,7 @@ toml = "0.8.20"
 serde = { version = "1.0.219", features = ["derive"] }
 thiserror = "2.0.12"
 log = "0.4.27"
-env_logger = "0.11.8"
+chrono = "0.4.40"
 
 [workspace.lints.rust]
 unexpected_cfgs = { level = "allow" }
