@@ -1,5 +1,4 @@
-use crate::packet::implement_packet;
-use crate::packet::PacketId;
+use crate::packet::{Packet, CONNECTED_PING, CONNECTED_PONG, DISCONNECTION_NOTIFICATION};
 use binary::{BinaryReader, BinaryResult, BinaryWriter};
 
 #[derive(Debug, Clone)]
@@ -7,32 +6,47 @@ pub struct ConnectedPing {
     pub client_timestamp: i64,
 }
 
-impl ConnectedPing {
-    pub fn encode_payload(&self, writer: &mut impl BinaryWriter) -> BinaryResult<()> {
-        writer.write_i64_be(self.client_timestamp)?;
-        Ok(())
-    }
-
-    pub fn decode_payload(reader: &mut impl BinaryReader) -> BinaryResult<Self> {
-        let client_timestamp = reader.read_i64_be()?;
-        Ok(Self { client_timestamp })
-    }
-}
-implement_packet!(ConnectedPing, PacketId::CONNECTED_PING);
-
 #[derive(Debug, Clone)]
 pub struct ConnectedPong {
     pub client_timestamp: i64,
     pub server_timestamp: i64,
 }
-impl ConnectedPong {
-    pub fn encode_payload(&self, writer: &mut impl BinaryWriter) -> BinaryResult<()> {
+
+#[derive(Debug, Clone)]
+pub struct DisconnectionNotification;
+
+impl Packet for ConnectedPing {
+    fn id() -> u8 {
+        CONNECTED_PING
+    }
+
+    fn serialize(&self, writer: &mut impl BinaryWriter) -> BinaryResult<()> {
+        writer.write_u8(Self::id())?;
+        writer.write_i64_be(self.client_timestamp)?;
+        Ok(())
+    }
+
+    fn deserialize(reader: &mut impl BinaryReader) -> BinaryResult<Self> {
+        reader.read_u8()?;
+        let client_timestamp = reader.read_i64_be()?;
+        Ok(Self { client_timestamp })
+    }
+}
+
+impl Packet for ConnectedPong {
+    fn id() -> u8 {
+        CONNECTED_PONG
+    }
+
+    fn serialize(&self, writer: &mut impl BinaryWriter) -> BinaryResult<()> {
+        writer.write_u8(Self::id())?;
         writer.write_i64_be(self.client_timestamp)?;
         writer.write_i64_be(self.server_timestamp)?;
         Ok(())
     }
 
-    pub fn decode_payload(reader: &mut impl BinaryReader) -> BinaryResult<Self> {
+    fn deserialize(reader: &mut impl BinaryReader) -> BinaryResult<Self> {
+        reader.read_u8()?;
         let client_timestamp = reader.read_i64_be()?;
         let server_timestamp = reader.read_i64_be()?;
         Ok(Self {
@@ -41,18 +55,18 @@ impl ConnectedPong {
         })
     }
 }
-implement_packet!(ConnectedPong, PacketId::CONNECTED_PONG);
 
-#[derive(Debug, Clone)]
-pub struct DisconnectionNotification;
-
-impl DisconnectionNotification {
-    pub fn encode_payload(&self, _writer: &mut impl BinaryWriter) -> BinaryResult<()> {
+impl Packet for DisconnectionNotification {
+    fn id() -> u8 {
+        DISCONNECTION_NOTIFICATION
+    }
+    fn serialize(&self, writer: &mut impl BinaryWriter) -> BinaryResult<()> {
+        writer.write_u8(Self::id())?;
         Ok(())
     }
 
-    pub fn decode_payload(_reader: &mut impl BinaryReader) -> BinaryResult<Self> {
+    fn deserialize(reader: &mut impl BinaryReader) -> BinaryResult<Self> {
+        reader.read_u8()?;
         Ok(Self)
     }
 }
-implement_packet!(DisconnectionNotification, PacketId::DISCONNECTION_NOTIFICATION);

@@ -1,18 +1,22 @@
-use crate::packet::implement_packet;
-use crate::packet::PacketId;
+use crate::packet::{Packet, OPEN_CONNECTION_REQUEST_1};
 use binary::{BinaryError, BinaryReader, BinaryResult, BinaryWriter};
-use std::net::SocketAddr;
 
 #[derive(Debug, Clone)]
 pub struct OpenConnectionRequest1 {
     pub protocol_version: u8,
 }
 
-impl OpenConnectionRequest1 {
-    pub fn encode_payload(&self, writer: &mut impl BinaryWriter) -> BinaryResult<()> {
-        writer.write_magic()?;
-        writer.write_u8(self.protocol_version)?;
-        let current_len = 1 + 16 + 1;
+impl Packet for OpenConnectionRequest1 {
+    fn id() -> u8 {
+        OPEN_CONNECTION_REQUEST_1
+    }
+
+    fn serialize(&self, writer: &mut impl BinaryWriter) -> BinaryResult<()> {
+        // TODO: idk if this works check later.
+        writer.write_u8(Self::id())?; // 1 byte
+        writer.write_magic()?; // 16 bytes
+        writer.write_u8(self.protocol_version)?; // 1 byte
+        let current_len = 1 + 16 + 1; // id + magic + protocol
         let padding_len = crate::consts::DEFAULT_MTU.saturating_sub(current_len as u16 + 28);
         if padding_len > 0 {
             writer.write_bytes(&vec![0; padding_len as usize])?;
@@ -20,18 +24,22 @@ impl OpenConnectionRequest1 {
         Ok(())
     }
 
-    pub fn decode_payload(reader: &mut impl BinaryReader) -> BinaryResult<Self> {
+    fn deserialize(reader: &mut impl BinaryReader) -> BinaryResult<Self> {
+        reader.read_u8()?;
         if !reader.read_magic()? {
-            return Err(binary::BinaryError::InvalidData(
+            return Err(BinaryError::InvalidData(
                 "Invalid magic sequence in OpenConnectionRequest1".into(),
             ));
         }
         let protocol_version = reader.read_u8()?;
+        // TODO: mtu size read
         Ok(Self { protocol_version })
     }
 }
-implement_packet!(OpenConnectionRequest1, PacketId::OPEN_CONNECTION_REQUEST_1);
 
+/*
+TODO: the rest of packets.
+TODO: impl Writer and Reader for better organization.
 #[derive(Debug, Clone)]
 pub struct OpenConnectionReply1 {
     pub server_guid: u64,
@@ -58,7 +66,10 @@ impl OpenConnectionReply1 {
         let security = reader.read_bool()?;
         let mtu_size = reader.read_u16_be()?;
         if mtu_size < 500 || mtu_size > crate::consts::MAX_MTU {
-            return Err(binary::BinaryError::InvalidData(format!("Invalid MTU size: {}", mtu_size)));
+            return Err(binary::BinaryError::InvalidData(format!(
+                "Invalid MTU size: {}",
+                mtu_size
+            )));
         }
         Ok(Self {
             server_guid,
@@ -140,7 +151,6 @@ impl OpenConnectionReply2 {
 }
 implement_packet!(OpenConnectionReply2, PacketId::OPEN_CONNECTION_REPLY_2);
 
-
 #[derive(Debug, Clone)]
 pub struct ConnectionRequest {
     pub client_guid: u64,
@@ -168,7 +178,6 @@ impl ConnectionRequest {
     }
 }
 implement_packet!(ConnectionRequest, PacketId::CONNECTION_REQUEST);
-
 
 #[derive(Debug, Clone)]
 pub struct ConnectionRequestAccepted {
@@ -212,8 +221,10 @@ impl ConnectionRequestAccepted {
         })
     }
 }
-implement_packet!(ConnectionRequestAccepted, PacketId::CONNECTION_REQUEST_ACCEPTED);
-
+implement_packet!(
+    ConnectionRequestAccepted,
+    PacketId::CONNECTION_REQUEST_ACCEPTED
+);
 
 #[derive(Debug, Clone)]
 pub struct NewIncomingConnection {
@@ -284,4 +295,8 @@ impl IncompatibleProtocolVersion {
         })
     }
 }
-implement_packet!(IncompatibleProtocolVersion, PacketId::INCOMPATIBLE_PROTOCOL_VERSION);
+implement_packet!(
+    IncompatibleProtocolVersion,
+    PacketId::INCOMPATIBLE_PROTOCOL_VERSION
+);
+*/

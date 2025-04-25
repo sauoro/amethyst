@@ -24,6 +24,9 @@ pub enum BinaryError {
 
     #[error("Invalid data encountered: {0}")]
     InvalidData(String),
+    
+    #[error("{0}")]
+    Custom(String),
 }
 
 pub type Result<T> = std::result::Result<T, BinaryError>;

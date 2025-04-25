@@ -3,10 +3,8 @@ use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
 use rand::random;
 use tokio::net::UdpSocket;
-use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::sync::Notify;
-use tokio::sync::oneshot::channel;
-use crate::{Connection, RaknetError};
+use crate::{RaknetError};
 
 pub struct RaknetListener {
     pub motd: String,
@@ -28,7 +26,7 @@ impl RaknetListener {
         };
 
         let server_guid = random::<u64>();
-        
+
         //let (conn_sender, conn_receiver) = channel::<Connection>();
 
         let listener = Self {
