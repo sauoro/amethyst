@@ -1,3 +1,5 @@
 Cargo.lock
 /target
 /.idea
+/crates/binary/.old_bin_conc
+/crates/raknet/.old_rak_conc
