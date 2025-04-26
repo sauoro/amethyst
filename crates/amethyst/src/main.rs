@@ -29,10 +29,7 @@ async fn main() -> Result<(), SetLoggerError> {
     };
 
     info!("Loading extras...");
-
-    logger().flush();
     
-    // Simulate some work
     sleep(Duration::from_secs(3)).await;
 
     let server_name = &config.server.name;
@@ -44,9 +41,11 @@ async fn main() -> Result<(), SetLoggerError> {
         elapsed_duration.as_secs_f64()
     );
 
-    logger().flush();
-
     sleep(Duration::from_secs(1)).await;
 
+    info!("Server shutting down gracefully...");
+
+    logger().flush();
+    
     Ok(())
 }
