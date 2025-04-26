@@ -9,6 +9,7 @@ pub mod config;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // ALL OF THIS IS A TEST.
     if let Err(e) = AmethystLogger::init(Level::Trace, 1024) {
         eprintln!("Failed to initialize logger: {}", e);
         std::process::exit(1);
@@ -86,6 +87,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Server shutting down...");
     
     logger().flush();
+    sleep(Duration::from_millis(1000)).await;
     Ok(())
 }
 
