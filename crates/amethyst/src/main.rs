@@ -1,4 +1,4 @@
-use log::{debug, error, info, logger, Level, SetLoggerError};
+use log::{error, info, logger, Level, SetLoggerError};
 use tokio::time::{sleep, Instant, Duration};
 use amethyst_log::AmethystLogger;
 
@@ -17,6 +17,7 @@ async fn main() -> Result<(), SetLoggerError> {
     let config = match config::handle() {
         Ok(config) => {
             info!("Configuration loaded successfully.");
+            logger().flush();
             config
         },
         Err(_e) => {
@@ -27,10 +28,10 @@ async fn main() -> Result<(), SetLoggerError> {
         }
     };
 
-    info!("Server started");
-    debug!("This won't be logged because level is Info");
-    error!("An error occurred");
+    info!("Loading extras...");
 
+    logger().flush();
+    
     // Simulate some work
     sleep(Duration::from_secs(3)).await;
 
@@ -44,8 +45,8 @@ async fn main() -> Result<(), SetLoggerError> {
     );
 
     logger().flush();
-    
+
     sleep(Duration::from_secs(1)).await;
-    
+
     Ok(())
 }
