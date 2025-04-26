@@ -1,215 +1,282 @@
-# How the Python Minecraft Ping Server Code Works ⚙️
+# How the Python Minecraft Ping Server Code Works ⚙️🔬
 
-This document explains the Python code (`server.py`) that acts like a very basic Minecraft Bedrock server, just enough to show up in the server list. Think of it as a guide to the robot's blueprints and instructions!
+This document explains the Python code (`server.py`) that acts like a very basic Minecraft Bedrock server, just enough to show up in the server list. Think of it as a detailed tour of the friendly robot's blueprints and internal wiring! 🤖🔧
 
-**The Big Picture:**
+**The Big Picture: What's the Goal? 🎯**
 
-The code sets up a listener on your computer that waits for a specific type of message (a "ping") that the Minecraft game sends out when looking for servers. When it hears this ping, it crafts a special reply message (a "pong") containing server details (like name, player count) and sends it back to the game. The game then displays this information in your server list.
+The code sets up a listener 👂 on your computer. This listener waits patiently for a specific type of network message (an "Unconnected Ping" 핑퐁) that the Minecraft game sends out when it's looking for servers on your network.
 
-**Let's Break Down the Code:**
+When our listener hears this "ping," it springs into action! It carefully builds a special reply message (an "Unconnected Pong" <0xF0><0x9F><0x8E><0x93>) containing server details (like its name, player count, version). Then, it sends this "pong" message back to the Minecraft game. The game reads the details and displays our server in your server list! ✅
 
-### 1. Importing the Toolboxes (`import ...`)
+**Let's Break Down the Code Section by Section:**
+
+### 1. Importing the Toolboxes 🧰 (`import ...`)
 
 ```python
-import socket  # Tools for network communication (like a walkie-talkie)
-import time    # Tools for pausing or waiting (like a stopwatch)
-import struct  # Tools for packing/unpacking data into strict binary formats (like a special encoder/decoder ring for computer messages)
-import random  # Tools for generating random numbers (like rolling dice)
-from threading import Thread # Tools for running tasks simultaneously (letting the robot listen while doing other things)
+import socket  # Network communication tools (like a walkie-talkie 📻)
+import time    # Time-related tools (like a stopwatch ⏱️)
+import struct  # Packing/unpacking data into specific byte formats (a secret decoder ring 💍 for computer messages!)
+import random  # Generating random numbers (like rolling dice 🎲)
+from threading import Thread # Running tasks simultaneously (letting the robot listen while doing other things! 👯)
 ```
 
-*   We start by bringing in pre-written code (libraries or "toolboxes") that give us the abilities we need.
-*   `socket`: Essential for sending and receiving messages over the network (UDP protocol, in this case).
-*   `time`: Used mainly for `time.sleep(1)` in the main loop to prevent the robot from running frantically when idle.
-*   `struct`: Crucial for converting Python data (like numbers) into the exact sequence of raw bytes (computer data) that Minecraft expects in its messages, and vice-versa.
-*   `random`: Used once to give our server a unique ID number (`server_guid`).
-*   `Thread`: Allows the listening part of the code to run in the background, so the main part of the program doesn't get stuck waiting for messages.
+*   We start by bringing in pre-written code libraries ("toolboxes") that give our script special powers.
+*   `socket`: Absolutely essential for sending and receiving messages over the network (using the UDP protocol in this case).
+*   `time`: Used for `time.sleep(1)` to let the main part of the robot rest instead of spinning in circles uselessly.
+*   `struct`: Super important! It converts Python data (like numbers) into the *exact* sequence of raw bytes  Bytes that Minecraft expects, and reads incoming bytes back into Python data.
+*   `random`: Used to give our server a unique ID number (`server_guid`).
+*   `Thread`: Allows the listening part (`listen` function) to run in the background, so the main program doesn't get stuck waiting.
 
-### 2. The Server Blueprint (`class MinecraftBedrockServer:`)
+### 2. The Server Blueprint 🏗️ (`class MinecraftBedrockServer:`)
 
 ```python
 class MinecraftBedrockServer:
-    # ... code inside the class ...
+    # ... all the robot's instructions and parts go here ...
 ```
 
-*   A `class` is like a blueprint for creating objects. Here, it's the blueprint for our "Minecraft Server Robot". All the instructions and data related to the server are organized within this class.
+*   A `class` is like a detailed blueprint for creating something. Here, it's the blueprint for our "Minecraft Server Robot". All the logic, data, and actions related to the server are neatly organized inside this blueprint.
 
-### 3. Setting Up the Robot (`__init__`)
+### 3. Setting Up the Robot: Construction Time! 🛠️ (`__init__`)
 
 ```python
     def __init__(self, host='0.0.0.0', port=19132):
-        self.host = host
-        self.port = port
-        self.socket = None
-        self.running = False
-        self.server_guid = random.randint(0, 2**64 - 1)
-        self.motd = { ... } # Dictionary holding server info
+        self.host = host          # Robot's street address (where to listen) 🏠
+        self.port = port          # Robot's specific door number 🚪 (19132 is common for MC)
+        self.socket = None        # Walkie-talkie is off initially 🔌
+        self.running = False      # Power switch is off initially 🚫
+        self.server_guid = random.randint(0, 2**64 - 1) # Assign a unique secret ID ✨
+        self.motd = { ... }       # The message board (dictionary) holding server info 📝
 ```
 
-*   The `__init__` method is the constructor – it runs automatically when we create a new `MinecraftBedrockServer` robot.
-*   `self`: Refers to the specific robot instance being built.
-*   `host='0.0.0.0'`: The network address to listen on. `0.0.0.0` is special – it means "listen on all available network connections on this computer".
-*   `port=19132`: The specific "door number" Minecraft usually knocks on (UDP port).
-*   `self.socket = None`: Initializes the walkie-talkie as off.
-*   `self.running = False`: Sets the robot's initial state to "off".
-*   `self.server_guid = ...`: Assigns a unique, large random number as the server's identifier. Minecraft uses this.
-*   `self.motd = {...}`: Creates a dictionary (like a labeled list) to store the server's details (name, version, player count, etc.) that will be shown in the game list.
+*   The `__init__` method (short for "initialize") is the constructor. It runs automatically *every time* we build a new robot using the `MinecraftBedrockServer` blueprint.
+*   `self`: A special variable representing the *specific* robot instance being built right now.
+*   `host='0.0.0.0'`: The network address. `0.0.0.0` is special, meaning "listen on *all* network connections this computer has" (like listening at every window of the house).
+*   `port=19132`: The UDP port number. Think of it as the specific door Minecraft knows to knock on.
+*   `self.socket = None`: The network connection (walkie-talkie) isn't set up yet.
+*   `self.running = False`: A flag to track if the server should be active. Starts as OFF.
+*   `self.server_guid = ...`: Gives the server a unique 64-bit random number ID, which RakNet uses.
+*   `self.motd = {...}`: Creates a Python `dictionary` (like a labeled list or message board) to store the server's details (name, version, player count etc.) that will be shown in the game list.
 
-### 4. Turning the Robot ON (`start`)
+### 4. Turning the Robot ON: Power Up! ⚡ (`start`)
 
 ```python
     def start(self):
+        # Prepare the walkie-talkie (socket)
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        # Tell it which address and door number to use
         self.socket.bind((self.host, self.port))
+        # Flip the main power switch ON
         self.running = True
-        print(f"Server started on {self.host}:{self.port}")
+        print(f"✅ Server Power ON! Listening at {self.host}:{self.port}")
 
+        # Create and start the helper 'listen' thread
         listen_thread = Thread(target=self.listen)
-        listen_thread.daemon = True
-        listen_thread.start()
+        listen_thread.daemon = True # Helper stops if main robot stops
+        listen_thread.start()       # Go, helper, go! ▶️
 
+        # Main robot waits patiently...
         try:
             while self.running:
-                time.sleep(1)
-        except KeyboardInterrupt:
-            self.stop()
+                time.sleep(1) # Zzz... wait a second
+        except KeyboardInterrupt: # If someone presses Ctrl+C...
+            self.stop()           # ...initiate shutdown sequence!
 ```
 
-*   Gets the walkie-talkie ready (`socket.socket(...)`): Specifies it's for Internet addresses (`AF_INET`) and uses the UDP protocol (`SOCK_DGRAM` - connectionless messages like postcards).
-*   Tells the walkie-talkie which address and port to use (`self.socket.bind(...)`). Now it's listening at that specific "door".
-*   Sets `self.running = True` (Robot is ON).
-*   Prints a confirmation message.
-*   **Threading:** Creates a separate "helper" (`Thread`) whose only job is to run the `self.listen` function. This is important! It means the robot can start listening *without* the main `start` function getting stuck waiting forever.
-    *   `daemon = True`: If the main robot program stops, the helper thread stops automatically too.
-    *   `listen_thread.start()`: Tells the helper thread to begin its listening job.
-*   The `while self.running:` loop keeps the main part of the script alive (doing nothing but sleeping for 1 second) until `self.running` becomes `False` or you press `Ctrl+C` (`KeyboardInterrupt`).
-*   `self.stop()`: Called if `Ctrl+C` is pressed to shut down gracefully.
+*   Gets the `socket` ready: Specifies Internet addressing (`AF_INET`) and UDP (`SOCK_DGRAM` - connectionless, like sending postcards 📮).
+*   `self.socket.bind(...)`: Claims the specified address and port. Now it's actively listening at that "door".
+*   Sets `self.running = True`. The robot is officially ON!
+*   Prints a happy startup message.
+*   **Threading Magic!** ✨ Creates a separate "helper" (`Thread`) to run the `self.listen` function. This is key! The helper handles *all* the waiting for messages, freeing up the main robot.
+    *   `daemon = True`: Links the helper's fate to the main robot. If the main program exits, the helper exits too.
+    *   `listen_thread.start()`: Tells the helper to start its `listen` job.
+*   The `while self.running:` loop keeps the main thread alive (but mostly resting via `time.sleep`) until `Ctrl+C` is pressed or `self.running` becomes `False`.
+*   `except KeyboardInterrupt`: Catches `Ctrl+C` and calls `self.stop()` for a clean shutdown.
 
-### 5. Turning the Robot OFF (`stop`)
+### 5. Turning the Robot OFF: Power Down Sequence 🔌 (`stop`)
 
 ```python
     def stop(self):
-        self.running = False
+        self.running = False  # Flip the main power switch OFF 🚫
         if self.socket:
-            self.socket.close()
-        print("Server stopped")
+            self.socket.close() # Turn off the walkie-talkie 📻➡️⏹️
+        print("⛔ Server Power OFF.")
 ```
 
-*   Sets `self.running = False`. This signals the listening loop (and the waiting loop in `start`) to stop.
-*   Closes the walkie-talkie (`self.socket.close()`) to release the network port.
-*   Prints a confirmation message.
+*   Sets `self.running = False`, signaling all loops (in `start` and `listen`) to stop.
+*   `self.socket.close()`: Politely closes the network connection, releasing the port.
+*   Prints a shutdown message.
 
-### 6. The Robot's Ear (`listen`)
+### 6. The Robot's Ear: Listening for Knocks 👂 (`listen`)
 
 ```python
     def listen(self):
-        while self.running:
+        # This runs in the separate 'helper' thread!
+        while self.running: # Keep listening while the power is ON
             try:
+                # Wait here until a message arrives... 📥
                 data, addr = self.socket.recvfrom(1024)
+                # Got one! Give it to the brain to handle 🧠
                 self.handle_packet(data, addr)
             except socket.error:
+                # Uh oh, walkie-talkie problem? Stop listening. 💥
                 break
 ```
 
-*   This runs inside the separate helper thread.
-*   `while self.running:`: Keeps listening as long as the robot's main switch is ON.
-*   `self.socket.recvfrom(1024)`: This is the **key listening part**. It waits here until a UDP message (up to 1024 bytes long) arrives on the bound port.
-    *   `data`: Contains the raw bytes of the message received.
-    *   `addr`: Contains the IP address and port of the sender (the Minecraft client).
-*   `self.handle_packet(data, addr)`: Once a message is received, it's passed to the `handle_packet` function for processing.
-*   `except socket.error`: If there's an error with the socket (e.g., it gets closed by `stop`), the loop breaks.
+*   This function is the helper thread's entire job.
+*   `while self.running:`: The core loop – keeps running as long as the server should be ON.
+*   `self.socket.recvfrom(1024)`: **The crucial listening point!** This line *pauses* the helper thread until a UDP message arrives on the `socket`. It accepts messages up to 1024 bytes.
+    *   `data`: The raw message content (bytes).
+    *   `addr`: The sender's IP address and port (who sent the message).
+*   `self.handle_packet(data, addr)`: Sends the received message (`data`) and sender info (`addr`) to the main processing function.
+*   `except socket.error`: If `recvfrom` fails (e.g., the socket is closed by `stop`), the loop terminates gracefully.
 
-### 7. The Robot's Brain - Checking the Mail (`handle_packet`)
+### 7. The Robot's Brain: Processing the Mail 🧠 (`handle_packet`)
 
 ```python
     def handle_packet(self, data, addr):
-        if not data:
-            return # Ignore empty messages
+        if not data: # Ignore empty messages
+            return
 
-        print(...) # Debugging prints
+        # Helpful debugging prints to see what arrived 📄
+        print("===== Received a Packet =====")
+        print(f" - From MC Client: {addr}")
+        print(f" - Packet Bytes (hex): {data.hex()}")
 
-        # Check the first byte (Packet ID)
-        if data[0] == 0x01: # 0x01 is the ID for Unconnected Ping
+        # What kind of message is this? Check the first byte (Packet ID)! 🤔
+        packet_id = data[0]
+        if packet_id == 0x01: # 0x01 = Unconnected Ping (Minecraft asking "Are you there?")
+             print("➡️ It's an Unconnected Ping! Handling...")
              self.handle_unconnected_ping(data, addr)
         # else:
-             # We could handle other packet types here in a real server (like login, chat etc)
+             # print(f"❓ Received unknown packet type: {hex(packet_id)}")
+             # In a REAL server, we'd handle many other IDs:
+             # 0x05: Open Connection Request 1
+             # 0x07: Open Connection Request 2
+             # 0x09: Connection Request
+             # 0x80-0x8f: Game packets (Login, Move, Chat...) etc.
+             pass # We only care about Pings for this simple example!
 ```
 
-*   This function decides what to do with a received message (`data`).
-*   It first checks if the message isn't empty.
-*   It prints information about the received packet (for debugging).
-*   **Packet ID Check:** Looks at the very first byte (`data[0]`). In the RakNet protocol used by Minecraft, this byte identifies the message type.
-    *   `0x01`: This ID means it's an "Unconnected Ping" - the message Minecraft sends when browsing the server list.
-    *   If it's a ping, it calls the specific handler `handle_unconnected_ping`.
-    *   (In a real server, you'd have more `if/elif` checks here for other packet IDs like login requests, movement updates, etc.)
+*   This function acts as the central dispatcher, deciding what to do based on the message type.
+*   It first ignores empty messages.
+*   Includes `print` statements to show incoming packet details (very useful for debugging!).
+*   **Packet ID Check:** The most important part! It examines the *very first byte* (`data[0]`) of the message. In the RakNet protocol (which Minecraft Bedrock uses), this byte tells us the message type.
+    *   `if data[0] == 0x01:`: Checks if the ID is `0x01`. This specific ID means it's an "Unconnected Ping" request – the game asking for server info for the list.
+    *   If it *is* a ping, it calls the dedicated function `self.handle_unconnected_ping`.
+    *   If it's *not* `0x01`, this simple script ignores it (`pass`). A real game server would have many more `elif data[0] == ...:` checks to handle login, gameplay packets, etc.
 
-### 8. Answering "Hello?" - The Ping Handler (`handle_unconnected_ping`)
+### 8. Answering "Hello?" - Crafting the Reply 📢 (`handle_unconnected_ping`)
 
 ```python
     def handle_unconnected_ping(self, data, addr):
-        # Check length, unpack data using struct, check magic bytes
-        # ... (details below) ...
+        # Basic checks: Is the ping message long enough? (Needs at least 33 bytes)
+        if len(data) < 33: return # Too short, likely invalid.
 
-        # Build MOTD string
-        motd_data = ';'.join([...])
+        # --- Use the 'struct' decoder ring to read the ping data ---
+        # Read bytes 1-8 as the Time sent by the client (Big Endian unsigned 64-bit int)
+        ping_time = struct.unpack('>Q', data[1:9])[0]
+        # Read bytes 9-24 as the 'Magic' bytes (a fixed RakNet identifier)
+        magic = data[9:25]
+        # Read bytes 25-32 as the Client's GUID (another Big Endian unsigned 64-bit int)
+        client_guid = struct.unpack('>Q', data[25:33])[0]
+        # ---------------------------------------------------------
 
-        # Build Pong packet byte-by-byte using struct.pack
-        pong_packet = bytearray()
-        pong_packet.append(0x1c) # Pong Packet ID
+        # Verification: Does it have the correct RakNet magic sequence? 🕵️
+        expected_magic = b'\x00\xff\xff\x00\xfe\xfe\xfe\xfe\xfd\xfd\xfd\xfd\x12\x34\x56\x78'
+        if magic != expected_magic:
+            print("❌ Invalid magic bytes! Ignoring packet.")
+            return
+
+        # --- Construct the MOTD String ---
+        # The order and format here are VERY specific and REQUIRED by Minecraft!
+        motd_parts = [
+            'MCPE',                      # Required header
+            self.motd['motd1'],          # Server name line 1
+            self.motd['protocol_version'],# Protocol number (e.g., '786')
+            self.motd['game_version'],   # Game version string (e.g., '1.21.73')
+            str(self.motd['current_players']), # Current players (as text)
+            str(self.motd['max_players']),     # Max players (as text)
+            str(self.server_guid),       # Our server's unique ID (as text)
+            self.motd['motd2'],          # Server name line 2
+            self.motd['game_mode'],      # Game mode (e.g., 'Survival')
+            '1',                         # Numeric Game mode (1=Survival, 0=Creative, etc.)
+            '19132',                     # IPv4 Port (usually same as listening port)
+            '19133',                     # IPv6 Port (often ignored, but needed)
+        ]
+        motd_data = ';'.join(motd_parts) # Join parts with semicolons!
+        # --------------------------------
+
+        # --- Build the Pong Packet (the reply message) byte-by-byte ---
+        pong_packet = bytearray()        # Start with an empty byte container
+
+        # 1. Packet ID (0x1c = Unconnected Pong)
+        pong_packet.append(0x1c)
+        # 2. Client's Ping Time (send it back)
         pong_packet.extend(struct.pack('>Q', ping_time))
+        # 3. Our Server GUID
         pong_packet.extend(struct.pack('>Q', self.server_guid))
+        # 4. RakNet Magic Bytes (send them back)
         pong_packet.extend(magic)
+        # 5. Length of the MOTD string (as a 16-bit unsigned int)
         pong_packet.extend(struct.pack('>H', len(motd_data)))
+        # 6. The MOTD string itself (encoded as UTF-8 bytes)
         pong_packet.extend(motd_data.encode('utf-8'))
+        # ---------------------------------------------------------
 
-        # Send the reply
+        # Send the completed Pong packet back to the client! 📤
         self.socket.sendto(pong_packet, addr)
-        print(...) # Debugging prints
+        print(f"✅ Sent Pong response to {addr}")
+        # print(f"   MOTD data: {motd_data}") # Uncomment to see the exact MOTD string
 ```
 
-*   This is where the robot responds to the game's "Are you there?"
-*   **Decoding the Ping (`struct.unpack`):**
-    *   It first checks if the received `data` is long enough.
-    *   `struct.unpack('>Q', data[1:9])[0]`: Reads 8 bytes starting from the second byte (`data[1]`) and interprets them as a 64-bit unsigned integer (`Q`) in Big-Endian format (`>`). This extracts the `ping_time` sent by the client.
-    *   `magic = data[9:25]`: Extracts the 16 "magic bytes" - a fixed sequence that helps verify it's a valid RakNet packet.
-    *   `struct.unpack('>Q', data[25:33])[0]`: Reads the next 8 bytes as the `client_guid`.
-*   **Verification:** It compares the received `magic` bytes to the expected sequence. If they don't match, it ignores the packet.
-*   **Building the MOTD String:**
-    *   It carefully constructs the server information string (`motd_data`) by joining various pieces from `self.motd` and other required values with semicolons (`;`). **The order is critical** for Minecraft to understand it.
-*   **Encoding the Pong (`struct.pack`):**
-    *   It creates an empty `bytearray` (a modifiable sequence of bytes) called `pong_packet`.
-    *   `pong_packet.append(0x1c)`: Adds the Packet ID for "Unconnected Pong" (`0x1c`).
-    *   `pong_packet.extend(struct.pack('>Q', ping_time))`: Takes the client's `ping_time`, converts it back into 8 raw bytes (`>Q`), and adds it to the packet.
-    *   It does the same for the `self.server_guid`.
-    *   It adds the original `magic` bytes.
-    *   `pong_packet.extend(struct.pack('>H', len(motd_data)))`: Calculates the length of the MOTD string, converts that length into 2 raw bytes (`>H`), and adds it.
-    *   `pong_packet.extend(motd_data.encode('utf-8'))`: Converts the MOTD string into raw bytes using UTF-8 encoding and adds it.
-*   **Sending the Reply:** `self.socket.sendto(pong_packet, addr)` sends the fully constructed `pong_packet` back to the Minecraft client's address (`addr`).
+*   This function is the heart of the server's *response* logic.
+*   **Decoding the Ping (`struct.unpack`):** It uses `struct.unpack` with format codes (`>Q` for Big-Endian 64-bit unsigned integer) to pull specific pieces of data (ping time, magic bytes, client ID) out of the raw byte message (`data`) received from the client.
+*   **Verification:** It checks if the extracted `magic` bytes match the known RakNet sequence. This is a basic sanity check.
+*   **Building the MOTD String:** It carefully creates the string that contains all the server info. This string *must* follow a strict format, using semicolons (`;`) as separators between specific fields in a specific order. Minecraft relies on this order to parse the info correctly.
+*   **Encoding the Pong (`struct.pack`):** This is the reverse of unpacking. It takes Python data (like numbers `ping_time`, `self.server_guid`, `len(motd_data)`) and uses `struct.pack` with format codes (`>Q`, `>H`) to convert them into the precise sequence of bytes needed for the reply packet. It also appends the Pong Packet ID (`0x1c`), the magic bytes, and the encoded MOTD string.
+*   **Sending the Reply:** `self.socket.sendto(pong_packet, addr)` transmits the fully assembled `pong_packet` back to the original sender (`addr`).
 
-### 9. Changing the Welcome Sign (`set_motd`)
+### 9. Changing the Welcome Sign: Quick Edits! ✏️ (`set_motd`)
 
 ```python
-    def set_motd(self, motd1=None, ...):
+    def set_motd(self, motd1=None, motd2=None, ...):
+        # Update parts of the self.motd dictionary if new values are given
         if motd1: self.motd['motd1'] = motd1
-        # ... and so on for other fields ...
+        if motd2: self.motd['motd2'] = motd2
+        # ... and so on for game_mode, max_players, etc. ...
 ```
 
-*   A simple helper function to update the values stored in the `self.motd` dictionary before starting the server.
+*   A simple helper function. It allows you to easily update the server details stored in the `self.motd` dictionary *before* the server starts. It checks if a new value was provided for each field and updates the dictionary accordingly.
 
-### 10. Running the Show (`if __name__ == "__main__":`)
+### 10. Running the Show: Let's Go! ▶️ (`if __name__ == "__main__":`)
 
 ```python
+# This block only runs when you execute this script directly
 if __name__ == "__main__":
+    print("🚀 Preparing the server robot...")
+    # Build the robot using the blueprint
     server = MinecraftBedrockServer(port=19132)
-    server.set_motd(...) # Optional: customize MOTD
+
+    # Optional: Customize the server sign before starting
+    print("🎨 Customizing the server sign (MOTD)...")
+    server.set_motd(
+        motd1="§bPython §eRakNet §aServer",
+        motd2="§dSimple MOTD Example",
+        # ... other settings ...
+    )
+
+    # Try to start the server and keep it running
     try:
-        server.start()
+        server.start() # Initiate the startup sequence!
     except KeyboardInterrupt:
+        # User pressed Ctrl+C, time to shut down
+        print("\n🚦 Ctrl+C detected! Initiating shutdown...")
         server.stop()
+    print("👋 Robot has finished its job.")
 ```
 
-*   This standard Python block ensures the code inside only runs when the script is executed directly (not when imported as a module into another script).
-*   `server = MinecraftBedrockServer(...)`: Creates an instance of our robot blueprint.
-*   `server.set_motd(...)`: Optionally updates the server details using the function described above.
-*   `server.start()`: Calls the method to turn the robot ON and start listening.
-*   The `try...except` block handles the `Ctrl+C` press (`KeyboardInterrupt`) to call `server.stop()` for a clean shutdown.
+*   This standard Python construct `if __name__ == "__main__":` ensures the code inside it only runs when you execute `python server.py` directly (and not if you were to `import server` into another Python file).
+*   `server = MinecraftBedrockServer(...)`: Creates an actual "robot" object from our blueprint.
+*   `server.set_motd(...)`: Calls the helper function to apply any desired customizations to the MOTD *before* starting.
+*   `server.start()`: Kicks off the whole process – turns the robot ON!
+*   The `try...except KeyboardInterrupt` block allows for a clean shutdown using `Ctrl+C`. It catches the interrupt signal and calls `server.stop()`.
