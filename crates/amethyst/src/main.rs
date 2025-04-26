@@ -1,6 +1,7 @@
 use log::{debug, error, info, logger, trace, warn, Level};
 use rak_rs::connection::Connection;
 use rak_rs::Listener;
+use rak_rs::mcpe::motd::Gamemode;
 use tokio::time::{sleep, Instant, Duration};
 use amethyst_log::AmethystLogger;
 
@@ -49,6 +50,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             return Err(e.into());
         }
     };
+    
+    server.motd.name = config.server.name;
+    server.motd.gamemode = Gamemode::Survival;
     
     server.start().await.unwrap();
 
