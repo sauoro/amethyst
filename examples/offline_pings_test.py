@@ -56,13 +56,52 @@ class MinecraftBedrockServer:
                 break
 
     def handle_packet(self, data, addr):
-        """Handle incoming packet"""
+        # This doc is provided by sauoro for a better understanding of RakNet
+        # If you d0n't understand, remember to read slowly and check step-by-step how we handle it
+
         if not data:
             return
 
+        print("===== Received a Packet =====")
+
+         # Receive Client's IP & Address
+        print(f" - From MC Client: {addr}")
+
+         # Bytes sent by Minecraft Client automatically (could be any)
+        print(f" - Packet Bytes (hex): {data.hex()}")
+
         # Unconnected ping detection (0x01 = ping)
         if data[0] == 0x01:
-            print(f"Received unconnected ping from {addr}")
+
+            # We convert the data into a hex
+            raw_hex = data.hex()
+
+            # Not important, this is to explain something
+            formatted_hex = ""
+            for i in range(0, len(raw_hex), 2):
+                byte_hex = raw_hex[i:i+2]
+                formatted_hex += "\\x" + byte_hex
+
+            print(f"===== Received Unconnected Ping =====")
+
+            # Receive Client's IP & Address
+            print(f"From Client: {addr}")
+
+            # 01000000001852088900ffff00fefefefefdfdfdfd12345678b4ea50e8f062a462
+            # This is sent by Minecraft Client
+            print(f" - Original raw packet (hex): {raw_hex}")
+
+            # This is how we would type it here in python with (b'\x01')
+            #
+            # This is an example in Python:
+            # Example: expected_magic = b'\x00\xff\xff\x00\xfe\xfe\xfe\xfe\xfd\xfd\xfd\xfd\x12\x34\x56\x78'
+            #
+            # This is what we receive from this print
+            #  - Formatted hex packet: \x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\x00\xfe\xfe\xfe\xfe\xfd\xfd\xfd\xfd\x12\x34\x56\x78\xb4\xea\x50\xe8\xf0\x62\xa4\x62
+            # This is sent by Minecraft Client
+            print(f" - Formatted hex packet: {formatted_hex}")
+
+             # Handle Unconnected Ping to Handle
             self.handle_unconnected_ping(data, addr)
 
     def handle_unconnected_ping(self, data, addr):
