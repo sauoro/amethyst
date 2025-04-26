@@ -1,12 +1,12 @@
-use log::{error, info, set_logger, set_max_level, SetLoggerError};
+use log::{debug, error, info, logger, set_logger, set_max_level, Level, SetLoggerError};
 use tokio::time::Instant;
+use amethyst_log::AmethystLogger;
 
 pub mod config;
 
 #[tokio::main]
 async fn main() -> Result<(), SetLoggerError> {
-    let _ = set_logger(&amethyst_log::AMETHYST_LOGGER);
-    set_max_level(log::LevelFilter::Info);
+    AmethystLogger::init(Level::Info).unwrap();
     
     let start_time = Instant::now();
 
@@ -17,6 +17,11 @@ async fn main() -> Result<(), SetLoggerError> {
             std::process::exit(1);
         }
     };
+
+    info!("Server started");
+    debug!("This won't be logged because level is Info");
+    error!("An error occurred");
+    logger().flush();
 
     let server_name = &config.server.name;
     let elapsed_duration = start_time.elapsed();
