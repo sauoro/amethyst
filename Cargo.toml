@@ -20,6 +20,7 @@ serde = { version = "1.0.219", features = ["derive"] }
 thiserror = "2.0.12"
 log = { version = "0.4.27", features = ["std"]}
 chrono = "0.4.40"
+rak-rs = { version = "0.3.3", default-features = false, features = [ "async_tokio", "mcpe" ] }
 
 [workspace.lints.rust]
 unexpected_cfgs = { level = "allow" }
