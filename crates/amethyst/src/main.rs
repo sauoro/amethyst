@@ -52,7 +52,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     server.start().await.unwrap();
 
-    info!("Listening on 0.0.0.0:19132");
+    info!("Listening on {}", &config.network.address);
     logger().flush();
     
     loop {
