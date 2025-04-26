@@ -1,19 +1,28 @@
-use log::{debug, error, info, logger, set_logger, set_max_level, Level, SetLoggerError};
-use tokio::time::Instant;
+use log::{debug, error, info, logger, Level, SetLoggerError};
+use tokio::time::{sleep, Instant, Duration};
 use amethyst_log::AmethystLogger;
 
 pub mod config;
 
 #[tokio::main]
 async fn main() -> Result<(), SetLoggerError> {
-    AmethystLogger::init(Level::Info).unwrap();
+    if let Err(e) = AmethystLogger::init(Level::Info, 1024) {
+        eprintln!("Failed to initialize logger: {}", e);
+        std::process::exit(1);
+    }
     
     let start_time = Instant::now();
 
+    info!("Loading configuration");
     let config = match config::handle() {
-        Ok(config) => config,
+        Ok(config) => {
+            info!("Configuration loaded successfully.");
+            config
+        },
         Err(_e) => {
             error!("Failed to load configuration.");
+            logger().flush();
+            tokio::time::sleep(Duration::from_secs(5)).await;
             std::process::exit(1);
         }
     };
@@ -21,7 +30,9 @@ async fn main() -> Result<(), SetLoggerError> {
     info!("Server started");
     debug!("This won't be logged because level is Info");
     error!("An error occurred");
-    logger().flush();
+
+    // Simulate some work
+    sleep(Duration::from_secs(3)).await;
 
     let server_name = &config.server.name;
     let elapsed_duration = start_time.elapsed();
@@ -31,6 +42,10 @@ async fn main() -> Result<(), SetLoggerError> {
         server_name,
         elapsed_duration.as_secs_f64()
     );
+
+    logger().flush();
+    
+    sleep(Duration::from_secs(1)).await;
     
     Ok(())
 }
