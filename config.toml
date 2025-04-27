@@ -3,4 +3,4 @@ address = "0.0.0.0:19132"
 
 [server]
 name = "Amethyst"
-max_players = 50
+max_players = 20
