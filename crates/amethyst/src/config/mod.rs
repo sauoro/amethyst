@@ -40,7 +40,7 @@ impl Default for ServerConfig {
     fn default() -> Self {
         Self {
             name: "Amethyst".to_string(),
-            max_players: 50,
+            max_players: 20,
         }
     }
 }
