@@ -2,22 +2,16 @@ use crate::error::BinaryError;
 use crate::io::{BinaryReader, BinaryWriter};
 use std::net::SocketAddr;
 
-/// Trait for types that can be read from a `BinaryReader`.
+const MAX_VEC_LEN: u32 = 1_000_000;
+
 pub trait Readable: Sized {
-    /// Reads an instance of `Self` from the reader.
+    /// Reads an instance from the reader.
     fn read(reader: &mut BinaryReader) -> Result<Self, BinaryError>;
 }
 
-/// Trait for types that can be written to a `BinaryWriter`.
 pub trait Writable {
     /// Writes this instance to the writer.
     fn write(&self, writer: &mut BinaryWriter) -> Result<(), BinaryError>;
-}
-
-impl<T: Readable> Readable for Result<T, BinaryError> {
-    fn read(reader: &mut BinaryReader) -> Result<Self, BinaryError> {
-        Ok(T::read(reader))
-    }
 }
 
 macro_rules! impl_primitive_readable {
@@ -66,7 +60,6 @@ impl_primitive_writable! {
     bool => write_bool
 }
 
-// String
 impl Readable for String {
     #[inline]
     fn read(reader: &mut BinaryReader) -> Result<Self, BinaryError> {
@@ -81,7 +74,6 @@ impl Writable for String {
     }
 }
 
-// &str (only Writable)
 impl Writable for &str {
     #[inline]
     fn write(&self, writer: &mut BinaryWriter) -> Result<(), BinaryError> {
@@ -89,7 +81,6 @@ impl Writable for &str {
     }
 }
 
-// Option<T>
 impl<T: Readable> Readable for Option<T> {
     fn read(reader: &mut BinaryReader) -> Result<Self, BinaryError> {
         if reader.read_bool()? {
@@ -102,20 +93,27 @@ impl<T: Readable> Readable for Option<T> {
 
 impl<T: Writable> Writable for Option<T> {
     fn write(&self, writer: &mut BinaryWriter) -> Result<(), BinaryError> {
-        if let Some(value) = self {
-            writer.write_bool(true)?;
-            value.write(writer)?;
-        } else {
-            writer.write_bool(false)?;
+        match self {
+            Some(value) => {
+                writer.write_bool(true)?;
+                value.write(writer)?;
+            }
+            None => writer.write_bool(false)?,
         }
         Ok(())
     }
 }
 
-// Vec<T> (using VarUInt32 for length)
 impl<T: Readable> Readable for Vec<T> {
     fn read(reader: &mut BinaryReader) -> Result<Self, BinaryError> {
-        let len = reader.read_var_u32()? as usize;
+        let len = reader.read_var_u32()?;
+        if len > MAX_VEC_LEN {
+            return Err(BinaryError::InvalidLength {
+                expected: len,
+                max: MAX_VEC_LEN as usize,
+            });
+        }
+        let len = len as usize;
         let mut vec = Vec::with_capacity(len);
         for _ in 0..len {
             vec.push(T::read(reader)?);
@@ -126,7 +124,10 @@ impl<T: Readable> Readable for Vec<T> {
 
 impl<T: Writable> Writable for Vec<T> {
     fn write(&self, writer: &mut BinaryWriter) -> Result<(), BinaryError> {
-        writer.write_var_u32(self.len() as u32)?; // Error if len > u32::MAX
+        if self.len() > u32::MAX as usize {
+            return Err(BinaryError::Overflow);
+        }
+        writer.write_var_u32(self.len() as u32)?;
         for item in self {
             item.write(writer)?;
         }
@@ -145,5 +146,38 @@ impl Writable for SocketAddr {
     #[inline]
     fn write(&self, writer: &mut BinaryWriter) -> Result<(), BinaryError> {
         writer.write_socket_addr(self)
+    }
+}
+
+impl<T: Readable, const N: usize> Readable for [T; N] {
+    fn read(reader: &mut BinaryReader) -> Result<Self, BinaryError> {
+        let mut vec = Vec::with_capacity(N);
+        for _ in 0..N {
+            vec.push(T::read(reader)?);
+        }
+        vec.try_into().map_err(|_| BinaryError::Custom("Array conversion failed".into()))
+    }
+}
+
+impl<T: Writable, const N: usize> Writable for [T; N] {
+    fn write(&self, writer: &mut BinaryWriter) -> Result<(), BinaryError> {
+        for item in self {
+            item.write(writer)?;
+        }
+        Ok(())
+    }
+}
+
+impl<T: Readable, U: Readable> Readable for (T, U) {
+    fn read(reader: &mut BinaryReader) -> Result<Self, BinaryError> {
+        Ok((T::read(reader)?, U::read(reader)?))
+    }
+}
+
+impl<T: Writable, U: Writable> Writable for (T, U) {
+    fn write(&self, writer: &mut BinaryWriter) -> Result<(), BinaryError> {
+        self.0.write(writer)?;
+        self.1.write(writer)?;
+        Ok(())
     }
 }
