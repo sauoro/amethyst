@@ -1,73 +1,52 @@
 # Amethyst 🚀
 
-**A High-Performance MCBE Server in Rust** 🦀
-
-[![Crates.io](https://img.shields.io/crates/v/amethyst-server)](https://crates.io/crates/amethyst-server) [![License](https://img.shields.io/crates/l/amethyst-server)](LICENSE)
-
+**A High-Performance Minecraft: Bedrock Edition Server in Rust** 🦀
 ---
 
-## ⚠️ DISCLAIMER
-This is **NOT** a PocketMine-MP ported in Rust, this is a software made from scratch.
-Please don't use this in production, this is still in early development.
+## ⚠️ Important Notice
+This project is **NOT** a port of PocketMine-MP. Amethyst is a new server implementation built from the ground up in Rust to leverage its unique capabilities. Please be aware that this software is in the **early stages of development** and is **not recommended for production use.**
 
-## 🤖 Community
-Join our Discord Server [Discord](https://discord.gg/hSTcSRcNcQ) if you want to be part of this massive project!
-## 🏗️ Status
+## 🧑‍🤝‍🧑 Join the Community
+Connect with fellow contributors and stay up-to-date on our progress by joining our Discord server: [Discord](https://discord.gg/hSTcSRcNcQ)
 
-We’re hard at work on Amethyst! Here’s what’s in progress:
+## 🏗️ Development Status
 
-- 🔧 **Async Networking Core**: Building the foundation for thousands of concurrent connections
+Amethyst is actively being developed. Here's a look at our current focus:
 
-## 🎉 Features
+- 🔧 **Core Network Layer**: Implementing the foundational binary handling and RakNet protocol support. This is our current priority!
 
-- 🚀 **Blazing Fast**: Low-overhead, high TPS
-- 🔒 **Memory Safe**: Rust guarantees against common bugs
-- 🧩 **Modular Plugins**: Hot-swap at runtime
-- 🌐 **Async I/O**: Powered by Tokio
+## ✨ Key Features (Our Focus)
 
-## 🛠️ Installation & Quick Start
+- ⚡ **Exceptional Performance**: Designed for minimal overhead and high Transactions Per Second (TPS).
+- 🛡️ **Robust Memory Safety**: Leveraging Rust's guarantees to prevent common memory-related errors, leading to a more stable server.
+- ⚙️ **Efficient Concurrency**: Utilizing Tokio for non-blocking, asynchronous input/output operations, enabling high scalability.
+
+## 🛠️ Getting Started (Development Builds)
 
 ```bash
-# Clone & build
-git clone https://github.com/sauoro/amethyst.git
+# Clone the repository and navigate to the project directory
+git clone [https://github.com/sauoro/amethyst.git](https://github.com/sauoro/amethyst.git)
 cd amethyst
+
+# Build a release-optimized binary
 cargo build --release
 
+# Run the Amethyst server
 ./target/release/amethyst
 ```
 
-## 📄 Configuration
+## 🗺️ Future Plans (Roadmap)
+Our immediate next steps include:
 
-Edit `config.toml`:
+- [ ] Implementing the Minecraft: Bedrock Edition communication protocol.
 
-```toml
-[network]
-address = "0.0.0.0:19132"
+## 💖 Contributing to Amethyst
+We welcome contributions from the community! Here's how you can get involved:
 
-[server]
-name = "Amethyst"
-max_players = 50
-```
+Fork the Repository: Create your own copy of the Amethyst repository.
+Create a Feature Branch: Organize your changes in a dedicated branch.
+Develop and Test: Implement your features or bug fixes and ensure they are working correctly.
+Submit a Pull Request: Propose your changes to the main repository.
 
-## 📝 Roadmap
-
-**What we’re working on next:**
-
-- [ ] World Import/Export Tool 🌍
-- [ ] Real-time Chat Moderation 💬
-- [ ] Automatic Backups 🔄
-
-## 💖 Contributing
-
-1. 🍴 Fork the repo
-2. 🌿 Create a branch
-3. 🚧 Code & test
-4. 🔃 Open a PR
-
-## 📜 License
-
-MIT • See [LICENSE](LICENSE)
-
----
-Built with ❤️ and Rust 🦀
-
+## 📜 Licensing
+Amethyst is released under the MIT License. For more details, please see the https://www.google.com/search?q=LICENSE file.

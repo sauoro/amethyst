@@ -1,3 +1,4 @@
+use std::error::Error;
 use log::{debug, error, info, logger, trace, warn, Level};
 use rak_rs::connection::Connection;
 use rak_rs::Listener;
@@ -8,8 +9,7 @@ use amethyst_log::AmethystLogger;
 pub mod config;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // ALL OF THIS IS A TEST.
+async fn main() -> Result<(), Box<dyn Error>> {
     if let Err(e) = AmethystLogger::init(Level::Trace, 1024) {
         eprintln!("Failed to initialize logger: {}", e);
         std::process::exit(1);
@@ -17,7 +17,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     let start_time = Instant::now();
 
-    info!("Loading configuration");
     let config = match config::handle() {
         Ok(config) => {
             info!("Configuration loaded successfully.");
@@ -32,14 +31,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    let server_name = &config.server.name;
     let elapsed_duration = start_time.elapsed();
-
-    info!(
-        "{}'s load done in {:.2}s",
-        server_name,
-        elapsed_duration.as_secs_f64()
-    );
+    info!("Server load done in {:.2}s",elapsed_duration.as_secs_f64());
     logger().flush();
 
     let address = &config.network.address;
@@ -53,6 +46,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     
     server.motd.name = config.server.name;
+    server.motd.sub_name = "Amethyst".to_owned();
     server.motd.gamemode = Gamemode::Survival;
     
     server.start().await.unwrap();
@@ -85,8 +79,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     
     info!("Server shutting down...");
-    
     logger().flush();
+    
     sleep(Duration::from_millis(1000)).await;
     Ok(())
 }
