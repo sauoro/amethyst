@@ -1,1 +1,2 @@
-pub struct Binary {}
+pub mod error;
+mod io;
