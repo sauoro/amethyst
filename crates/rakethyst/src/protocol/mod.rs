@@ -53,9 +53,7 @@ impl Readable for UnconnectedPing {
         let mut bytes = [0u8; 16];
         reader.read_exact(&mut bytes)?;
         if bytes != MAGIC {
-            Err(BinaryError::InvalidData(
-                "Expected magic bytes.".to_string(),
-            ))?
+            Err(InvalidData("Expected magic bytes.".to_string()))?
         }
         let client_guid = reader.read_u64()?;
         Ok(Self { time, client_guid })
@@ -99,16 +97,7 @@ impl Writable for UnconnectedPong {
         writer.write_u64(self.time)?;
         writer.write_u64(self.server_guid)?;
         writer.write_bytes(MAGIC.as_slice())?;
-        let motd_bytes = self.motd.as_bytes();
-        let motd_len = motd_bytes.len();
-        if motd_len > u16::MAX as usize {
-            return Err(BinaryError::InvalidData(format!(
-                "MOTD length ({}) exceeds u16::MAX",
-                motd_len
-            )));
-        }
-        writer.write_u16(motd_len as u16)?;
-        writer.write_bytes(motd_bytes)?;
+        writer.write_string_u16(self.motd.as_str())?;
         Ok(())
     }
 }
@@ -120,18 +109,13 @@ impl Readable for UnconnectedPong {
         let mut bytes = [0u8; 16];
         reader.read_exact(&mut bytes)?;
         if bytes != MAGIC {
-            Err(InvalidData(
-                "Expected magic bytes.".to_string(),
-            ))?
+            Err(InvalidData("Expected magic bytes.".to_string()))?
         }
-        let len = reader.read_u16()? as usize;
-        let str_bytes = reader.read_bytes(len)?;
-        let motd = String::from_utf8(str_bytes.to_vec())
-            .map_err(|e| InvalidData(format!("Invalid UTF-8 string: {}", e)));
+        let motd = reader.read_string_u16()?;
         Ok(Self {
             time,
             server_guid,
-            motd: motd?,
+            motd,
         })
     }
 }

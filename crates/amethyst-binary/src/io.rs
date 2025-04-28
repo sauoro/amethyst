@@ -435,6 +435,13 @@ impl BinaryReader {
             .map_err(|e| InvalidData(format!("Invalid UTF-8 string: {}", e)))
     }
 
+    pub fn read_string_u16(&mut self) -> Result<String, BinaryError> {
+        let len = self.read_u16()? as usize;
+        let str_bytes = self.read_bytes(len)?;
+        String::from_utf8(str_bytes.to_vec())
+            .map_err(|e| InvalidData(format!("Invalid UTF-8 string: {}", e)))
+    }
+
     /// Reads a standard `SocketAddr` (IPv4 or IPv6).
     /// Format: u8 (4 or 6) + address bytes + u16 port (BE)
     pub fn read_socket_addr(&mut self) -> Result<SocketAddr, BinaryError> {
@@ -836,6 +843,19 @@ impl BinaryWriter {
         let bytes = value.as_bytes();
         let len = bytes.len();
         self.write_var_u32(len as u32)?;
+        self.write_bytes(bytes)
+    }
+
+    pub fn write_string_u16(&mut self, value: &str) -> Result<(), BinaryError> {
+        let bytes = value.as_bytes();
+        let len = bytes.len();
+        if len > u16::MAX as usize {
+            return Err(InvalidData(format!(
+                "Value's length ({}) exceeds u16::MAX",
+                len
+            )));
+        }
+        self.write_u16(len as u16)?;
         self.write_bytes(bytes)
     }
 
