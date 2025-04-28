@@ -16,9 +16,7 @@ impl BinaryReader {
         Self { buffer }
     }
 
-    /// Creates a new `BinaryReader` from a byte slice.
-    ///
-    /// This involves a copy of the slice data.
+    /// Creates a new `BinaryReader` from a byte slice (involves a copy).
     #[inline]
     pub fn from_slice(slice: &[u8]) -> Self {
         Self {
@@ -26,24 +24,16 @@ impl BinaryReader {
         }
     }
 
-    /// Returns the number of bytes remaining in the buffer.
     #[inline]
     pub fn remaining(&self) -> usize {
         self.buffer.remaining()
     }
 
-    /// Returns `true` if there are no bytes remaining in the buffer.
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.buffer.is_empty()
     }
 
-    /// Advances the internal cursor by `cnt` bytes.
-    ///
-    /// # Errors
-    ///
-    /// Returns `Err(BinaryError::UnexpectedEOF)` if `cnt` is greater than the
-    /// number of remaining bytes.
     #[inline]
     pub fn advance(&mut self, cnt: usize) -> Result<(), BinaryError> {
         if self.remaining() >= cnt {
@@ -54,11 +44,6 @@ impl BinaryReader {
         }
     }
 
-    /// Peeks at the next byte without advancing the cursor.
-    ///
-    /// # Errors
-    ///
-    /// Returns `Err(BinaryError::UnexpectedEOF)` if the buffer is empty.
     #[inline]
     pub fn peek_u8(&self) -> Result<u8, BinaryError> {
         if self.remaining() >= 1 {
@@ -68,7 +53,6 @@ impl BinaryReader {
         }
     }
 
-    /// Reads a single byte (`u8`).
     #[inline]
     pub fn read_u8(&mut self) -> Result<u8, BinaryError> {
         if self.remaining() >= 1 {
@@ -78,7 +62,6 @@ impl BinaryReader {
         }
     }
 
-    /// Reads a single signed byte (`i8`).
     #[inline]
     pub fn read_i8(&mut self) -> Result<i8, BinaryError> {
         if self.remaining() >= 1 {
@@ -88,7 +71,6 @@ impl BinaryReader {
         }
     }
 
-    /// Reads a `u16` (Big Endian).
     #[inline]
     pub fn read_u16(&mut self) -> Result<u16, BinaryError> {
         if self.remaining() >= 2 {
@@ -98,7 +80,6 @@ impl BinaryReader {
         }
     }
 
-    /// Reads a `u16` (Little Endian).
     #[inline]
     pub fn read_u16_le(&mut self) -> Result<u16, BinaryError> {
         if self.remaining() >= 2 {
@@ -108,7 +89,6 @@ impl BinaryReader {
         }
     }
 
-    /// Reads an `i16` (Big Endian).
     #[inline]
     pub fn read_i16(&mut self) -> Result<i16, BinaryError> {
         if self.remaining() >= 2 {
@@ -118,7 +98,6 @@ impl BinaryReader {
         }
     }
 
-    /// Reads an `i16` (Little Endian).
     #[inline]
     pub fn read_i16_le(&mut self) -> Result<i16, BinaryError> {
         if self.remaining() >= 2 {
@@ -128,7 +107,6 @@ impl BinaryReader {
         }
     }
 
-    /// Reads a `u24` (3 bytes) as a `u32` (Big Endian).
     pub fn read_u24(&mut self) -> Result<u32, BinaryError> {
         if self.remaining() >= 3 {
             let bytes = [
@@ -143,7 +121,6 @@ impl BinaryReader {
         }
     }
 
-    /// Reads a `u24` (3 bytes) as a `u32` (Little Endian).
     pub fn read_u24_le(&mut self) -> Result<u32, BinaryError> {
         if self.remaining() >= 3 {
             let bytes = [
@@ -158,10 +135,8 @@ impl BinaryReader {
         }
     }
 
-    /// Reads an `i24` (3 bytes) as an `i32` (Big Endian).
     pub fn read_i24(&mut self) -> Result<i32, BinaryError> {
         let u = self.read_u24()?;
-        // Sign extends if the highest bit (bit 23) is set
         if u & 0x00800000 != 0 {
             Ok((u | 0xFF000000) as i32)
         } else {
@@ -169,23 +144,15 @@ impl BinaryReader {
         }
     }
 
-    /// Reads an `i24` (3 bytes) as an `i32` (Little Endian).
     pub fn read_i24_le(&mut self) -> Result<i32, BinaryError> {
-        // Read as little-endian u24 first
         let u = self.read_u24_le()?;
-        // Sign extends if the highest bit (bit 23) is set
-        // Note: The bytes were already read little-endian, so the value `u` holds the correct magnitude.
-        // We just need to check the sign bit (23rd bit).
         if u & 0x00800000 != 0 {
-            // If sign bit is set, extend it to fill the upper byte for i32 representation.
-            // Since it's LE, the sign bit is the MSB of the *third* byte read.
             Ok((u | 0xFF000000) as i32)
         } else {
             Ok(u as i32)
         }
     }
 
-    /// Reads a `u32` (Big Endian).
     #[inline]
     pub fn read_u32(&mut self) -> Result<u32, BinaryError> {
         if self.remaining() >= 4 {
@@ -195,7 +162,6 @@ impl BinaryReader {
         }
     }
 
-    /// Reads a `u32` (Little Endian).
     #[inline]
     pub fn read_u32_le(&mut self) -> Result<u32, BinaryError> {
         if self.remaining() >= 4 {
@@ -205,7 +171,6 @@ impl BinaryReader {
         }
     }
 
-    /// Reads an `i32` (Big Endian).
     #[inline]
     pub fn read_i32(&mut self) -> Result<i32, BinaryError> {
         if self.remaining() >= 4 {
@@ -215,7 +180,6 @@ impl BinaryReader {
         }
     }
 
-    /// Reads an `i32` (Little Endian).
     #[inline]
     pub fn read_i32_le(&mut self) -> Result<i32, BinaryError> {
         if self.remaining() >= 4 {
@@ -225,7 +189,6 @@ impl BinaryReader {
         }
     }
 
-    /// Reads a `u64` (Big Endian).
     #[inline]
     pub fn read_u64(&mut self) -> Result<u64, BinaryError> {
         if self.remaining() >= 8 {
@@ -235,7 +198,6 @@ impl BinaryReader {
         }
     }
 
-    /// Reads a `u64` (Little Endian).
     #[inline]
     pub fn read_u64_le(&mut self) -> Result<u64, BinaryError> {
         if self.remaining() >= 8 {
@@ -245,7 +207,6 @@ impl BinaryReader {
         }
     }
 
-    /// Reads an `i64` (Big Endian).
     #[inline]
     pub fn read_i64(&mut self) -> Result<i64, BinaryError> {
         if self.remaining() >= 8 {
@@ -255,7 +216,6 @@ impl BinaryReader {
         }
     }
 
-    /// Reads an `i64` (Little Endian).
     #[inline]
     pub fn read_i64_le(&mut self) -> Result<i64, BinaryError> {
         if self.remaining() >= 8 {
@@ -265,7 +225,6 @@ impl BinaryReader {
         }
     }
 
-    /// Reads a `u128` (Big Endian).
     #[inline]
     pub fn read_u128(&mut self) -> Result<u128, BinaryError> {
         if self.remaining() >= 16 {
@@ -275,7 +234,6 @@ impl BinaryReader {
         }
     }
 
-    /// Reads a `u128` (Little Endian).
     #[inline]
     pub fn read_u128_le(&mut self) -> Result<u128, BinaryError> {
         if self.remaining() >= 16 {
@@ -285,7 +243,6 @@ impl BinaryReader {
         }
     }
 
-    /// Reads an `i128` (Big Endian).
     #[inline]
     pub fn read_i128(&mut self) -> Result<i128, BinaryError> {
         if self.remaining() >= 16 {
@@ -295,7 +252,6 @@ impl BinaryReader {
         }
     }
 
-    /// Reads an `i128` (Little Endian).
     #[inline]
     pub fn read_i128_le(&mut self) -> Result<i128, BinaryError> {
         if self.remaining() >= 16 {
@@ -305,7 +261,6 @@ impl BinaryReader {
         }
     }
 
-    /// Reads an `f32` (Big Endian).
     #[inline]
     pub fn read_f32(&mut self) -> Result<f32, BinaryError> {
         if self.remaining() >= 4 {
@@ -315,7 +270,6 @@ impl BinaryReader {
         }
     }
 
-    /// Reads an `f32` (Little Endian).
     #[inline]
     pub fn read_f32_le(&mut self) -> Result<f32, BinaryError> {
         if self.remaining() >= 4 {
@@ -325,7 +279,6 @@ impl BinaryReader {
         }
     }
 
-    /// Reads an `f64` (Big Endian).
     #[inline]
     pub fn read_f64(&mut self) -> Result<f64, BinaryError> {
         if self.remaining() >= 8 {
@@ -335,7 +288,6 @@ impl BinaryReader {
         }
     }
 
-    /// Reads an `f64` (Little Endian).
     #[inline]
     pub fn read_f64_le(&mut self) -> Result<f64, BinaryError> {
         if self.remaining() >= 8 {
@@ -345,13 +297,11 @@ impl BinaryReader {
         }
     }
 
-    /// Reads a boolean value (encoded as a single byte, 0=false, non-zero=true).
     #[inline]
     pub fn read_bool(&mut self) -> Result<bool, BinaryError> {
         Ok(self.read_u8()? != 0)
     }
 
-    /// Reads `len` bytes into the provided buffer `dst`.
     #[inline]
     pub fn read_exact(&mut self, dst: &mut [u8]) -> Result<(), BinaryError> {
         let len = dst.len();
@@ -363,7 +313,6 @@ impl BinaryReader {
         }
     }
 
-    /// Reads `len` bytes and returns them as a new `Bytes` object (cheap slice).
     #[inline]
     pub fn read_bytes(&mut self, len: usize) -> Result<Bytes, BinaryError> {
         if self.remaining() >= len {
@@ -373,13 +322,11 @@ impl BinaryReader {
         }
     }
 
-    /// Reads the remaining bytes from the buffer.
     #[inline]
     pub fn read_remaining(&mut self) -> Bytes {
         self.buffer.split_off(0)
     }
 
-    /// Reads a variable-length unsigned 32-bit integer (VarUInt).
     pub fn read_var_u32(&mut self) -> Result<u32, BinaryError> {
         let mut value: u32 = 0;
         let mut shift: u32 = 0;
@@ -396,13 +343,11 @@ impl BinaryReader {
         }
     }
 
-    /// Reads a variable-length signed 32-bit integer (VarInt, zigzag encoded).
     pub fn read_var_i32(&mut self) -> Result<i32, BinaryError> {
         let unsigned = self.read_var_u32()?;
         Ok((unsigned >> 1) as i32 ^ -((unsigned & 1) as i32))
     }
 
-    /// Reads a variable-length unsigned 64-bit integer (VarULong).
     pub fn read_var_u64(&mut self) -> Result<u64, BinaryError> {
         let mut value: u64 = 0;
         let mut shift: u32 = 0;
@@ -419,24 +364,18 @@ impl BinaryReader {
         }
     }
 
-    /// Reads a variable-length signed 64-bit integer (VarLong, zigzag encoded).
     pub fn read_var_i64(&mut self) -> Result<i64, BinaryError> {
         let unsigned = self.read_var_u64()?;
         Ok((unsigned >> 1) as i64 ^ -((unsigned & 1) as i64))
     }
 
-    /// Reads a length-prefixed string (length is VarUInt32).
     pub fn read_string(&mut self) -> Result<String, BinaryError> {
         let len = self.read_var_u32()? as usize;
-        // Check for potential excessive length if needed, e.g.,
-        // if len > MAX_STRING_LEN { return Err(invalid_data("String length exceeds limit")); }
         let str_bytes = self.read_bytes(len)?;
         String::from_utf8(str_bytes.to_vec())
             .map_err(|e| InvalidData(format!("Invalid UTF-8 string: {}", e)))
     }
 
-    /// Reads a standard `SocketAddr` (IPv4 or IPv6).
-    /// Format: u8 (4 or 6) + address bytes + u16 port (BE)
     pub fn read_socket_addr(&mut self) -> Result<SocketAddr, BinaryError> {
         let version = self.read_u8()?;
         match version {
@@ -458,16 +397,13 @@ impl BinaryReader {
         }
     }
 
-    /// Reads a `Raknet` specific `SocketAddr` (IPv4 or IPv6).
-    /// This requires the `raknet` feature flag.
-    /// #[cfg(feature = "rakethyst")]
+    /// Reads a RakNet-specific `SocketAddr` (IPv4 or IPv6).
     pub fn read_raknet_address(&mut self) -> Result<SocketAddr, BinaryError> {
         let ip_ver = self.read_u8()?;
         if ip_ver == 4 {
             if self.remaining() < 6 {
                 return Err(UnexpectedEOF);
             }
-
             let ip = Ipv4Addr::new(
                 !self.read_u8()?,
                 !self.read_u8()?,
@@ -477,35 +413,24 @@ impl BinaryReader {
             let port = self.read_u16()?;
             Ok(SocketAddr::new(IpAddr::V4(ip), port))
         } else if ip_ver == 6 {
-            // RakNet IPv6 structure according to reference:
-            // i16(le) family = 23 (AF_INET6)
-            // u16(be) port
-            // i32(be) flowinfo = 0
-            // u8[16] address
-            // i32(be) scope_id = 0
             if self.remaining() < (2 + 2 + 4 + 16 + 4) {
                 return Err(UnexpectedEOF);
             }
-
             let _family = self.read_i16_le()?;
             let port = self.read_u16()?;
             let flowinfo = self.read_u32()?;
             let mut addr_buf = [0; 16];
             self.read_exact(&mut addr_buf)?;
             let scope_id = self.read_u32()?;
-
             let ip = Ipv6Addr::from(addr_buf);
             Ok(SocketAddr::V6(SocketAddrV6::new(
                 ip, port, flowinfo, scope_id,
             )))
         } else {
-            Err(InvalidData(
-                "Invalid RakNet SocketAddr IP version".to_string(),
-            ))
+            Err(InvalidData("Invalid RakNet SocketAddr IP version".to_string()))
         }
     }
 
-    /// Reads a type `T` that implements the `Readable` trait.
     #[inline]
     pub fn read<T: Readable>(&mut self) -> Result<T, BinaryError> {
         T::read(self)
@@ -518,7 +443,6 @@ pub struct BinaryWriter {
 }
 
 impl BinaryWriter {
-    /// Creates a new empty `BinaryWriter`.
     #[inline]
     pub fn new() -> Self {
         Self {
@@ -526,7 +450,6 @@ impl BinaryWriter {
         }
     }
 
-    /// Creates a new `BinaryWriter` with a specified initial capacity.
     #[inline]
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
@@ -534,92 +457,77 @@ impl BinaryWriter {
         }
     }
 
-    /// Returns the current length of the buffer in bytes.
     #[inline]
     pub fn len(&self) -> usize {
         self.buffer.len()
     }
 
-    /// Returns `true` if the buffer is empty.
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.buffer.is_empty()
     }
 
-    /// Returns the current capacity of the buffer.
     #[inline]
     pub fn capacity(&self) -> usize {
         self.buffer.capacity()
     }
 
-    /// Clears the buffer, removing all data. Capacity is preserved.
     #[inline]
     pub fn clear(&mut self) {
-        self.buffer.clear();
+        self.buffer.clear()
     }
 
-    /// Consumes the writer and returns the underlying `BytesMut` buffer.
     #[inline]
     pub fn into_inner(self) -> BytesMut {
         self.buffer
     }
 
-    /// Consumes the writer and returns an immutable `Bytes` buffer.
     #[inline]
     pub fn freeze(self) -> Bytes {
         self.buffer.freeze()
     }
 
-    /// Returns a reference to the written bytes as a slice.
     #[inline]
     pub fn as_bytes(&self) -> &[u8] {
         &self.buffer[..]
     }
 
-    /// Writes a single byte (`u8`).
     #[inline]
     pub fn write_u8(&mut self, value: u8) -> Result<(), BinaryError> {
         self.buffer.put_u8(value);
         Ok(())
     }
 
-    /// Writes a single signed byte (`i8`).
     #[inline]
     pub fn write_i8(&mut self, value: i8) -> Result<(), BinaryError> {
         self.buffer.put_i8(value);
         Ok(())
     }
 
-    /// Writes a `u16` (Big Endian).
     #[inline]
     pub fn write_u16(&mut self, value: u16) -> Result<(), BinaryError> {
         self.buffer.put_u16(value);
         Ok(())
     }
 
-    /// Writes a `u16` (Little Endian).
     #[inline]
     pub fn write_u16_le(&mut self, value: u16) -> Result<(), BinaryError> {
         self.buffer.put_u16_le(value);
         Ok(())
     }
 
-    /// Writes an `i16` (Big Endian).
     #[inline]
     pub fn write_i16(&mut self, value: i16) -> Result<(), BinaryError> {
         self.buffer.put_i16(value);
         Ok(())
     }
 
-    /// Writes an `i16` (Little Endian).
     #[inline]
     pub fn write_i16_le(&mut self, value: i16) -> Result<(), BinaryError> {
         self.buffer.put_i16_le(value);
         Ok(())
     }
 
-    /// Writes a `u24` (3 bytes) from a `u32` (Big Endian).
-    /// Upper byte of the `u32` is ignored.
     pub fn write_u24(&mut self, value: u32) -> Result<(), BinaryError> {
         if value > 0xFFFFFF {
             return Err(InvalidData("Value too large for u24".to_string()));
@@ -629,8 +537,6 @@ impl BinaryWriter {
         Ok(())
     }
 
-    /// Writes a `u24` (3 bytes) from a `u32` (Little Endian).
-    /// Upper byte of the `u32` is ignored.
     pub fn write_u24_le(&mut self, value: u32) -> Result<(), BinaryError> {
         if value > 0xFFFFFF {
             return Err(InvalidData("Value too large for u24".to_string()));
@@ -640,9 +546,6 @@ impl BinaryWriter {
         Ok(())
     }
 
-    /// Writes an `i24` (3 bytes) from an `i32` (Big Endian).
-    /// Value should be within the i24 range [-8388608, 8388607].
-    /// Behavior for out-of-range values depends on truncation.
     pub fn write_i24(&mut self, value: i32) -> Result<(), BinaryError> {
         if !(-0x800000..=0x7FFFFF).contains(&value) {
             return Err(InvalidData("Value out of range for i24".to_string()));
@@ -652,8 +555,6 @@ impl BinaryWriter {
         Ok(())
     }
 
-    /// Writes an `i24` (3 bytes) from an `i32` (Little Endian).
-    /// Value should be within the i24 range [-8388608, 8388607].
     pub fn write_i24_le(&mut self, value: i32) -> Result<(), BinaryError> {
         if !(-0x800000..=0x7FFFFF).contains(&value) {
             return Err(InvalidData("Value out of range for i24".to_string()));
@@ -663,133 +564,114 @@ impl BinaryWriter {
         Ok(())
     }
 
-    /// Writes a `u32` (Big Endian).
     #[inline]
     pub fn write_u32(&mut self, value: u32) -> Result<(), BinaryError> {
         self.buffer.put_u32(value);
         Ok(())
     }
 
-    /// Writes a `u32` (Little Endian).
     #[inline]
     pub fn write_u32_le(&mut self, value: u32) -> Result<(), BinaryError> {
         self.buffer.put_u32_le(value);
         Ok(())
     }
 
-    /// Writes an `i32` (Big Endian).
     #[inline]
     pub fn write_i32(&mut self, value: i32) -> Result<(), BinaryError> {
         self.buffer.put_i32(value);
         Ok(())
     }
 
-    /// Writes an `i32` (Little Endian).
     #[inline]
     pub fn write_i32_le(&mut self, value: i32) -> Result<(), BinaryError> {
         self.buffer.put_i32_le(value);
         Ok(())
     }
 
-    /// Writes a `u64` (Big Endian).
     #[inline]
     pub fn write_u64(&mut self, value: u64) -> Result<(), BinaryError> {
         self.buffer.put_u64(value);
         Ok(())
     }
 
-    /// Writes a `u64` (Little Endian).
     #[inline]
     pub fn write_u64_le(&mut self, value: u64) -> Result<(), BinaryError> {
         self.buffer.put_u64_le(value);
         Ok(())
     }
 
-    /// Writes an `i64` (Big Endian).
     #[inline]
     pub fn write_i64(&mut self, value: i64) -> Result<(), BinaryError> {
         self.buffer.put_i64(value);
         Ok(())
     }
 
-    /// Writes an `i64` (Little Endian).
     #[inline]
     pub fn write_i64_le(&mut self, value: i64) -> Result<(), BinaryError> {
         self.buffer.put_i64_le(value);
         Ok(())
     }
 
-    /// Writes a `u128` (Big Endian).
     #[inline]
     pub fn write_u128(&mut self, value: u128) -> Result<(), BinaryError> {
         self.buffer.put_u128(value);
         Ok(())
     }
 
-    /// Writes a `u128` (Little Endian).
     #[inline]
     pub fn write_u128_le(&mut self, value: u128) -> Result<(), BinaryError> {
         self.buffer.put_u128_le(value);
         Ok(())
     }
 
-    /// Writes an `i128` (Big Endian).
     #[inline]
     pub fn write_i128(&mut self, value: i128) -> Result<(), BinaryError> {
         self.buffer.put_i128(value);
         Ok(())
     }
 
-    /// Writes an `i128` (Little Endian).
     #[inline]
     pub fn write_i128_le(&mut self, value: i128) -> Result<(), BinaryError> {
         self.buffer.put_i128_le(value);
         Ok(())
     }
 
-    /// Writes an `f32` (Big Endian).
     #[inline]
     pub fn write_f32(&mut self, value: f32) -> Result<(), BinaryError> {
         self.buffer.put_f32(value);
         Ok(())
     }
 
-    /// Writes an `f32` (Little Endian).
     #[inline]
     pub fn write_f32_le(&mut self, value: f32) -> Result<(), BinaryError> {
         self.buffer.put_f32_le(value);
         Ok(())
     }
 
-    /// Writes an `f64` (Big Endian).
     #[inline]
     pub fn write_f64(&mut self, value: f64) -> Result<(), BinaryError> {
         self.buffer.put_f64(value);
         Ok(())
     }
 
-    /// Writes an `f64` (Little Endian).
     #[inline]
     pub fn write_f64_le(&mut self, value: f64) -> Result<(), BinaryError> {
         self.buffer.put_f64_le(value);
         Ok(())
     }
 
-    /// Writes a boolean value (as a single byte, 0=false, 1=true).
     #[inline]
     pub fn write_bool(&mut self, value: bool) -> Result<(), BinaryError> {
         self.buffer.put_u8(value as u8);
         Ok(())
     }
 
-    /// Writes a slice of bytes directly to the buffer.
     #[inline]
     pub fn write_bytes(&mut self, src: &[u8]) -> Result<(), BinaryError> {
         self.buffer.put_slice(src);
         Ok(())
     }
 
-    /// Writes a variable-length unsigned 32-bit integer (VarUInt).
     pub fn write_var_u32(&mut self, mut value: u32) -> Result<(), BinaryError> {
         loop {
             let mut byte = (value & 0x7F) as u8;
@@ -804,13 +686,11 @@ impl BinaryWriter {
         }
     }
 
-    /// Writes a variable-length signed 32-bit integer (VarInt, zigzag encoded).
     pub fn write_var_i32(&mut self, value: i32) -> Result<(), BinaryError> {
         let unsigned = (value << 1) ^ (value >> 31);
         self.write_var_u32(unsigned as u32)
     }
 
-    /// Writes a variable-length unsigned 64-bit integer (VarULong).
     pub fn write_var_u64(&mut self, mut value: u64) -> Result<(), BinaryError> {
         loop {
             let mut byte = (value & 0x7F) as u8;
@@ -825,13 +705,11 @@ impl BinaryWriter {
         }
     }
 
-    /// Writes a variable-length signed 64-bit integer (VarLong, zigzag encoded).
     pub fn write_var_i64(&mut self, value: i64) -> Result<(), BinaryError> {
         let unsigned = (value << 1) ^ (value >> 63);
         self.write_var_u64(unsigned as u64)
     }
 
-    /// Writes a length-prefixed string (length is VarUInt32).
     pub fn write_string(&mut self, value: &str) -> Result<(), BinaryError> {
         let bytes = value.as_bytes();
         let len = bytes.len();
@@ -839,8 +717,6 @@ impl BinaryWriter {
         self.write_bytes(bytes)
     }
 
-    /// Writes a standard `SocketAddr` (IPv4 or IPv6).
-    /// Format: u8 (4 or 6) + address bytes + u16 port (BE)
     pub fn write_socket_addr(&mut self, addr: &SocketAddr) -> Result<(), BinaryError> {
         match addr {
             SocketAddr::V4(v4) => {
@@ -857,9 +733,7 @@ impl BinaryWriter {
         Ok(())
     }
 
-    /// Writes a `Raknet` specific `SocketAddr` (IPv4 or IPv6).
-    /// This requires the `raknet` feature flag.
-    /// #[cfg(feature = "rakethyst")]
+    /// Writes a RakNet-specific `SocketAddr` (IPv4 or IPv6).
     pub fn write_raknet_address(&mut self, address: SocketAddr) -> Result<(), BinaryError> {
         match address {
             SocketAddr::V4(addr) => {
@@ -870,24 +744,17 @@ impl BinaryWriter {
                 self.write_u16(address.port())?;
             }
             SocketAddr::V6(addr) => {
-                // RakNet IPv6 structure:
-                // i16(le) family = 23 (AF_INET6)
-                // u16(be) port
-                // i32(be) flowinfo = 0
-                // u8[16] address
-                // i32(be) scope_id = 0
                 self.write_u8(6)?;
-                self.write_i16_le(23)?; // AF_INET6 family identifier (or relevant value)
-                self.write_u16(addr.port())?; // Big Endian Port
-                self.write_u32(addr.flowinfo())?; // Typically 0
+                self.write_i16_le(23)?;
+                self.write_u16(addr.port())?;
+                self.write_u32(addr.flowinfo())?;
                 self.write_bytes(&addr.ip().octets())?;
-                self.write_u32(addr.scope_id())?; // Typically 0
+                self.write_u32(addr.scope_id())?;
             }
         }
         Ok(())
     }
 
-    /// Writes a type `T` that implements the `Writable` trait.
     #[inline]
     pub fn write<T: Writable + ?Sized>(&mut self, value: &T) -> Result<(), BinaryError> {
         value.write(self)
