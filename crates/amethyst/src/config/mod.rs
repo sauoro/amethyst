@@ -10,19 +10,18 @@ pub mod error;
 
 const CONFIG_FILE_NAME: &str = "config.toml";
 
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(default)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     pub network: NetworkConfig,
     pub server: ServerConfig,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct NetworkConfig {
     pub address: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ServerConfig {
     pub name: String,
     pub max_players: u32,

@@ -1,3 +1,3 @@
 pub mod error;
 pub mod io;
-mod traits;
+pub mod traits;

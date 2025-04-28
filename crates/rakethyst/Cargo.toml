@@ -8,3 +8,4 @@ license = "MIT"
 workspace = true
 
 [dependencies]
+amethyst-binary.workspace = true

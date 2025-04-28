@@ -18,10 +18,14 @@ tokio = { version = "1.44.2", features = ["full"] }
 toml = "0.8.20"
 serde = { version = "1.0.219", features = ["derive"] }
 thiserror = "2.0.12"
-log = { version = "0.4.27", features = ["std"]}
+log = { version = "0.4.27", features = ["std"] }
 chrono = "0.4.40"
-rak-rs = { version = "0.3.3", default-features = false, features = [ "async_tokio", "mcpe" ] }
 bytes = "1.10.1"
+amethyst-binary = { version = "0.1.0", path = "crates/amethyst-binary" }
+amethyst-log = { version = "0.1.0", path = "crates/amethyst-log" }
+rakethyst = { version = "0.1.0", path = "crates/rakethyst" }
+rand = "0.9.1"
+hex = "0.4.3"
 
 [workspace.lints.rust]
 unexpected_cfgs = { level = "allow" }
