@@ -25,7 +25,7 @@ Amethyst is actively being developed. Here's a look at our current focus:
 
 ```bash
 # Clone the repository and navigate to the project directory
-git clone [https://github.com/sauoro/amethyst.git](https://github.com/sauoro/amethyst.git)
+git clone https://github.com/sauoro/amethyst.git
 cd amethyst
 
 # Build a release-optimized binary
