@@ -1,9 +1,10 @@
 use amethyst_binary::error::BinaryError;
-use amethyst_binary::error::BinaryError::InvalidData;
+use amethyst_binary::error::BinaryError::{InvalidData, UnexpectedEOF};
 use amethyst_binary::io::{BinaryReader, BinaryWriter};
 use amethyst_binary::traits::{Readable, Writable};
-use bytes::Bytes;
+use bytes::{Bytes};
 use std::net::SocketAddr;
+use crate::connection::SequenceNumberRange;
 
 pub const RAKNET_PROTOCOL_VERSION: u8 = 11;
 
@@ -22,6 +23,8 @@ pub const CONNECTION_REQUEST: u8 = 0x09;
 pub const UNCONNECTED_PONG: u8 = 0x1c;
 pub const CONNECTION_REQUEST_ACCEPTED: u8 = 0x10;
 pub const NEW_INCOMING_CONNECTION: u8 = 0x13;
+pub const ACK: u8 = 0xc0;
+pub const NACK: u8 = 0xa0;
 
 #[derive(Clone, Debug)]
 pub struct ConnectedPing {
@@ -148,14 +151,14 @@ impl Readable for UnconnectedPong {
 #[derive(Clone, Debug)]
 pub struct OpenConnectionRequest1 {
     pub protocol_version: u8,
-    pub payload: Bytes,
+    //pub payload: Bytes,
 }
 
 impl Writable for OpenConnectionRequest1 {
     fn write(&self, writer: &mut BinaryWriter) -> Result<(), BinaryError> {
         writer.write_bytes(MAGIC.as_slice())?;
         writer.write_u8(self.protocol_version)?;
-        writer.write_bytes(self.payload.as_ref())?;
+        //writer.write_bytes(self.payload.as_ref())?;
         Ok(())
     }
 }
@@ -171,10 +174,10 @@ impl Readable for OpenConnectionRequest1 {
             )));
         }
         let protocol_version = reader.read_u8()?;
-        let payload = reader.read_bytes(reader.remaining())?;
+        //let payload = reader.read_bytes(reader.remaining())?;
         Ok(Self {
             protocol_version,
-            payload,
+            //payload,
         })
     }
 }
@@ -396,5 +399,264 @@ impl Readable for ConnectionRequestAccepted {
             request_time,
             time,
         })
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum AckNackRecord {
+    Single(u32),
+    Range(SequenceNumberRange),
+}
+
+impl Readable for AckNackRecord {
+    fn read(reader: &mut BinaryReader) -> Result<Self, BinaryError> {
+        let is_range = reader.read_u8()? != 0;
+        if is_range {
+            let start = reader.read_u24_le()?;
+            let end = reader.read_u24_le()?;
+            if start > end {
+                return Err(InvalidData(format!(
+                    "Invalid ACK/NACK range: start ({}) > end ({})",
+                    start, end
+                )));
+            }
+            Ok(AckNackRecord::Range(SequenceNumberRange { start, end }))
+        } else {
+            let seq_num = reader.read_u24_le()?;
+            Ok(AckNackRecord::Single(seq_num))
+        }
+    }
+}
+
+impl Writable for AckNackRecord {
+    fn write(&self, writer: &mut BinaryWriter) -> Result<(), BinaryError> {
+        match self {
+            AckNackRecord::Range(range) => {
+                writer.write_u8(1)?;
+                writer.write_u24_le(range.start)?;
+                writer.write_u24_le(range.end)?;
+            }
+            AckNackRecord::Single(seq_num) => {
+                writer.write_u8(0)?;
+                writer.write_u24_le(*seq_num)?;
+            }
+        }
+        Ok(())
+    }
+}
+
+
+#[derive(Debug, Clone, Default)]
+pub struct AckNackPacket {
+    pub records: Vec<AckNackRecord>,
+}
+
+impl Readable for AckNackPacket {
+    fn read(reader: &mut BinaryReader) -> Result<Self, BinaryError> {
+        let record_count = reader.read_u16()?;
+        let mut records = Vec::with_capacity(record_count as usize);
+        for _ in 0..record_count {
+            records.push(AckNackRecord::read(reader)?);
+        }
+        Ok(AckNackPacket { records })
+    }
+}
+
+impl Writable for AckNackPacket {
+    fn write(&self, writer: &mut BinaryWriter) -> Result<(), BinaryError> {
+        if self.records.len() > u16::MAX as usize {
+            return Err(InvalidData(format!(
+                "Too many ACK/NACK records: {}",
+                self.records.len()
+            )));
+        }
+        writer.write_u16(self.records.len() as u16)?;
+        for record in &self.records {
+            record.write(writer)?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Reliability {
+    Unreliable = 0,
+    UnreliableSequenced = 1,
+    Reliable = 2,
+    ReliableOrdered = 3,
+    ReliableSequenced = 4,
+    UnreliableWithAckReceipt = 5,
+    ReliableWithAckReceipt = 6,
+    ReliableOrderedWithAckReceipt = 7,
+}
+
+impl Reliability {
+    pub fn from_u8(val: u8) -> Option<Self> {
+        match val {
+            0 => Some(Reliability::Unreliable),
+            1 => Some(Reliability::UnreliableSequenced),
+            2 => Some(Reliability::Reliable),
+            3 => Some(Reliability::ReliableOrdered),
+            4 => Some(Reliability::ReliableSequenced),
+            5 => Some(Reliability::UnreliableWithAckReceipt),
+            6 => Some(Reliability::ReliableWithAckReceipt),
+            7 => Some(Reliability::ReliableOrderedWithAckReceipt),
+            _ => None,
+        }
+    }
+
+    pub fn is_reliable(&self) -> bool {
+        matches!(self, Reliability::Reliable | Reliability::ReliableOrdered | Reliability::ReliableSequenced | Reliability::ReliableWithAckReceipt | Reliability::ReliableOrderedWithAckReceipt)
+    }
+
+    pub fn is_ordered(&self) -> bool {
+        matches!(self, Reliability::UnreliableSequenced | Reliability::ReliableOrdered | Reliability::ReliableSequenced | Reliability::ReliableOrderedWithAckReceipt)
+    }
+
+    pub fn is_sequenced(&self) -> bool {
+        self.is_ordered()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct EncapsulatedPacket {
+    pub reliability: Reliability,
+    pub is_split: bool,
+    pub sequence_number: Option<u32>,
+    pub ordering_index: Option<u32>,
+    pub ordering_channel: Option<u8>,
+    pub split_count: Option<u32>,
+    pub split_id: Option<u16>,
+    pub split_index: Option<u32>,
+    pub payload: Bytes,
+}
+
+impl Readable for EncapsulatedPacket {
+    fn read(reader: &mut BinaryReader) -> Result<Self, BinaryError> {
+        let flags = reader.read_u8()?;
+        let reliability_val = (flags >> 5) & 0x07;
+        let reliability = Reliability::from_u8(reliability_val)
+            .ok_or_else(|| InvalidData(format!("Invalid reliability value: {}", reliability_val)))?;
+        let is_split = (flags & 0x10) != 0;
+
+        let payload_len_bits = reader.read_u16()? as usize;
+        let payload_len_bytes = (payload_len_bits + 7) / 8;
+
+        let mut sequence_number: Option<u32> = None;
+        let mut ordering_index: Option<u32> = None;
+        let mut ordering_channel: Option<u8> = None;
+
+        if reliability.is_reliable() {
+            sequence_number = Some(reader.read_u24_le()?);
+        }
+
+        if reliability.is_sequenced() {
+            ordering_index = Some(reader.read_u24_le()?);
+            ordering_channel = Some(reader.read_u8()?);
+        }
+
+        let mut split_count: Option<u32> = None;
+        let mut split_id: Option<u16> = None;
+        let mut split_index: Option<u32> = None;
+
+        if is_split {
+            split_count = Some(reader.read_u32()?); // BE
+            split_id = Some(reader.read_u16()?); // BE
+            split_index = Some(reader.read_u32()?); // BE
+        }
+
+        if reader.remaining() < payload_len_bytes {
+            return Err(UnexpectedEOF);
+        }
+        let payload = reader.read_bytes(payload_len_bytes)?;
+
+        Ok(Self {
+            reliability,
+            is_split,
+            sequence_number,
+            ordering_index,
+            ordering_channel,
+            split_count,
+            split_id,
+            split_index,
+            payload,
+        })
+    }
+}
+
+impl Writable for EncapsulatedPacket {
+    fn write(&self, writer: &mut BinaryWriter) -> Result<(), BinaryError> {
+        let mut flags = (self.reliability as u8) << 5;
+        if self.is_split {
+            flags |= 0x10;
+            return Err(InvalidData("Sending split packets not implemented".to_string()));
+        }
+        writer.write_u8(flags)?;
+
+        let payload_len_bits = (self.payload.len() * 8) as u16;
+        writer.write_u16(payload_len_bits)?;
+
+        if self.reliability.is_reliable() {
+            writer.write_u24_le(self.sequence_number.ok_or_else(|| {
+                InvalidData("Reliable packet missing sequence number for writing".to_string())
+            })?)?;
+        }
+
+        if self.reliability.is_sequenced() {
+            writer.write_u24_le(self.ordering_index.ok_or_else(|| {
+                InvalidData("Ordered/Sequenced packet missing ordering index for writing".to_string())
+            })?)?;
+            writer.write_u8(self.ordering_channel.ok_or_else(|| {
+                InvalidData("Ordered/Sequenced packet missing ordering channel for writing".to_string())
+            })?)?;
+        }
+
+        if self.is_split {
+            return Err(InvalidData("Cannot write split packet header (NYI)".to_string()));
+        }
+
+        writer.write_bytes(&self.payload)?;
+
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct FrameSetPacket {
+    pub sequence_number: u32,
+    pub packets: Vec<EncapsulatedPacket>,
+}
+
+impl Readable for FrameSetPacket {
+    fn read(reader: &mut BinaryReader) -> Result<Self, BinaryError> {
+        let sequence_number = reader.read_u24_le()?;
+        let mut packets = Vec::new();
+        while reader.remaining() > 0 {
+            match EncapsulatedPacket::read(reader) {
+                Ok(packet) => packets.push(packet),
+                Err(_e @ UnexpectedEOF) => {
+                    log::trace!("EOF encountered reading encapsulated packet, assuming end of frame. Remaining: {}", reader.remaining());
+                    break;
+                }
+                Err(e) => {
+                    log::error!("Error parsing encapsulated packet: {}", e);
+                    return Err(e);
+                }
+            }
+        }
+        Ok(Self {
+            sequence_number,
+            packets,
+        })
+    }
+}
+
+impl Writable for FrameSetPacket {
+    fn write(&self, writer: &mut BinaryWriter) -> Result<(), BinaryError> {
+        writer.write_u24_le(self.sequence_number)?;
+        for packet in &self.packets {
+            packet.write(writer)?;
+        }
+        Ok(())
     }
 }
