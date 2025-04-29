@@ -9,3 +9,8 @@ workspace = true
 
 [dependencies]
 amethyst-binary.workspace = true
+bytes.workspace = true
+amethyst-log = { version = "0.1.0", path = "../amethyst-log"}
+log.workspace = true
+tokio.workspace = true
+dashmap.workspace = true

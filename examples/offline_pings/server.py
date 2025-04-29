@@ -208,6 +208,7 @@ class MinecraftBedrockServer:
         pong_packet.extend(motd_data.encode('utf-8'))
 
         # Send the finished "pong" message back to the game that sent the "ping".
+        print(f"Sent {pong_packet.hex()} Len: {len(pong_packet)}")
         self.socket.sendto(pong_packet, addr)
         print(f"Sent 'I'm here!' (Pong) message back to {addr}")
         print(f"The message on the sign was: {motd_data}")

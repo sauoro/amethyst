@@ -9,42 +9,55 @@ pub struct BinaryReader {
     buffer: Bytes,
 }
 
+macro_rules! read_primitive {
+    ($self:expr, $size:expr, $method:ident) => {
+        if $self.buffer.remaining() >= $size {
+            Ok($self.buffer.$method())
+        } else {
+            Err(UnexpectedEOF)
+        }
+    };
+    ($self:expr, $size:expr, $method:ident, mut) => {
+         if $self.buffer.remaining() >= $size {
+            Ok($self.buffer.$method())
+        } else {
+            Err(UnexpectedEOF)
+        }
+    };
+    ($self:expr, $size:expr, $method:ident, void) => {
+        if $self.buffer.remaining() >= $size {
+            $self.buffer.$method($size);
+            Ok(())
+        } else {
+            Err(UnexpectedEOF)
+        }
+    };
+}
+
+
 impl BinaryReader {
-    /// Creates a new `BinaryReader` wrapping the given `Bytes`.
-    #[inline]
     pub fn new(buffer: Bytes) -> Self {
         Self { buffer }
     }
 
-    /// Creates a new `BinaryReader` from a byte slice (involves a copy).
-    #[inline]
     pub fn from_slice(slice: &[u8]) -> Self {
         Self {
             buffer: Bytes::copy_from_slice(slice),
         }
     }
 
-    #[inline]
     pub fn remaining(&self) -> usize {
         self.buffer.remaining()
     }
 
-    #[inline]
     pub fn is_empty(&self) -> bool {
         self.buffer.is_empty()
     }
 
-    #[inline]
     pub fn advance(&mut self, cnt: usize) -> Result<(), BinaryError> {
-        if self.remaining() >= cnt {
-            self.buffer.advance(cnt);
-            Ok(())
-        } else {
-            Err(UnexpectedEOF)
-        }
+        read_primitive!(self, cnt, advance, void)
     }
-    
-    #[inline]
+
     pub fn peek_u8(&self) -> Result<u8, BinaryError> {
         if self.remaining() >= 1 {
             Ok(self.buffer.chunk()[0])
@@ -53,86 +66,40 @@ impl BinaryReader {
         }
     }
 
-    #[inline]
     pub fn read_u8(&mut self) -> Result<u8, BinaryError> {
-        if self.remaining() >= 1 {
-            Ok(self.buffer.get_u8())
-        } else {
-            Err(UnexpectedEOF)
-        }
+        read_primitive!(self, 1, get_u8, mut)
     }
 
-    #[inline]
     pub fn read_i8(&mut self) -> Result<i8, BinaryError> {
-        if self.remaining() >= 1 {
-            Ok(self.buffer.get_i8())
-        } else {
-            Err(UnexpectedEOF)
-        }
+        read_primitive!(self, 1, get_i8, mut)
     }
 
-    #[inline]
     pub fn read_u16(&mut self) -> Result<u16, BinaryError> {
-        if self.remaining() >= 2 {
-            Ok(self.buffer.get_u16())
-        } else {
-            Err(UnexpectedEOF)
-        }
+        read_primitive!(self, 2, get_u16, mut)
     }
 
-    #[inline]
     pub fn read_u16_le(&mut self) -> Result<u16, BinaryError> {
-        if self.remaining() >= 2 {
-            Ok(self.buffer.get_u16_le())
-        } else {
-            Err(UnexpectedEOF)
-        }
+        read_primitive!(self, 2, get_u16_le, mut)
     }
 
-    #[inline]
     pub fn read_i16(&mut self) -> Result<i16, BinaryError> {
-        if self.remaining() >= 2 {
-            Ok(self.buffer.get_i16())
-        } else {
-            Err(UnexpectedEOF)
-        }
+        read_primitive!(self, 2, get_i16, mut)
     }
 
-    #[inline]
     pub fn read_i16_le(&mut self) -> Result<i16, BinaryError> {
-        if self.remaining() >= 2 {
-            Ok(self.buffer.get_i16_le())
-        } else {
-            Err(UnexpectedEOF)
-        }
+        read_primitive!(self, 2, get_i16_le, mut)
     }
 
     pub fn read_u24(&mut self) -> Result<u32, BinaryError> {
-        if self.remaining() >= 3 {
-            let bytes = [
-                0,
-                self.buffer.get_u8(),
-                self.buffer.get_u8(),
-                self.buffer.get_u8(),
-            ];
-            Ok(u32::from_be_bytes(bytes))
-        } else {
-            Err(UnexpectedEOF)
-        }
+        let mut bytes = [0u8; 3];
+        self.read_exact(&mut bytes)?;
+        Ok(u32::from_be_bytes([0, bytes[0], bytes[1], bytes[2]]))
     }
 
     pub fn read_u24_le(&mut self) -> Result<u32, BinaryError> {
-        if self.remaining() >= 3 {
-            let bytes = [
-                self.buffer.get_u8(),
-                self.buffer.get_u8(),
-                self.buffer.get_u8(),
-                0,
-            ];
-            Ok(u32::from_le_bytes(bytes))
-        } else {
-            Err(UnexpectedEOF)
-        }
+        let mut bytes = [0u8; 3];
+        self.read_exact(&mut bytes)?;
+        Ok(u32::from_le_bytes([bytes[0], bytes[1], bytes[2], 0]))
     }
 
     pub fn read_i24(&mut self) -> Result<i32, BinaryError> {
@@ -153,156 +120,74 @@ impl BinaryReader {
         }
     }
 
-    #[inline]
     pub fn read_u32(&mut self) -> Result<u32, BinaryError> {
-        if self.remaining() >= 4 {
-            Ok(self.buffer.get_u32())
-        } else {
-            Err(UnexpectedEOF)
-        }
+        read_primitive!(self, 4, get_u32, mut)
     }
 
-    #[inline]
     pub fn read_u32_le(&mut self) -> Result<u32, BinaryError> {
-        if self.remaining() >= 4 {
-            Ok(self.buffer.get_u32_le())
-        } else {
-            Err(UnexpectedEOF)
-        }
+        read_primitive!(self, 4, get_u32_le, mut)
     }
 
-    #[inline]
     pub fn read_i32(&mut self) -> Result<i32, BinaryError> {
-        if self.remaining() >= 4 {
-            Ok(self.buffer.get_i32())
-        } else {
-            Err(UnexpectedEOF)
-        }
+        read_primitive!(self, 4, get_i32, mut)
     }
-    
-    #[inline]
+
     pub fn read_i32_le(&mut self) -> Result<i32, BinaryError> {
-        if self.remaining() >= 4 {
-            Ok(self.buffer.get_i32_le())
-        } else {
-            Err(UnexpectedEOF)
-        }
+        read_primitive!(self, 4, get_i32_le, mut)
     }
 
-    #[inline]
     pub fn read_u64(&mut self) -> Result<u64, BinaryError> {
-        if self.remaining() >= 8 {
-            Ok(self.buffer.get_u64())
-        } else {
-            Err(UnexpectedEOF)
-        }
+        read_primitive!(self, 8, get_u64, mut)
     }
 
-    #[inline]
     pub fn read_u64_le(&mut self) -> Result<u64, BinaryError> {
-        if self.remaining() >= 8 {
-            Ok(self.buffer.get_u64_le())
-        } else {
-            Err(UnexpectedEOF)
-        }
+        read_primitive!(self, 8, get_u64_le, mut)
     }
 
-    #[inline]
     pub fn read_i64(&mut self) -> Result<i64, BinaryError> {
-        if self.remaining() >= 8 {
-            Ok(self.buffer.get_i64())
-        } else {
-            Err(UnexpectedEOF)
-        }
+        read_primitive!(self, 8, get_i64, mut)
     }
 
-    #[inline]
     pub fn read_i64_le(&mut self) -> Result<i64, BinaryError> {
-        if self.remaining() >= 8 {
-            Ok(self.buffer.get_i64_le())
-        } else {
-            Err(UnexpectedEOF)
-        }
+        read_primitive!(self, 8, get_i64_le, mut)
     }
 
-    #[inline]
     pub fn read_u128(&mut self) -> Result<u128, BinaryError> {
-        if self.remaining() >= 16 {
-            Ok(self.buffer.get_u128())
-        } else {
-            Err(UnexpectedEOF)
-        }
+        read_primitive!(self, 16, get_u128, mut)
     }
 
-    #[inline]
     pub fn read_u128_le(&mut self) -> Result<u128, BinaryError> {
-        if self.remaining() >= 16 {
-            Ok(self.buffer.get_u128_le())
-        } else {
-            Err(UnexpectedEOF)
-        }
+        read_primitive!(self, 16, get_u128_le, mut)
     }
 
-    #[inline]
     pub fn read_i128(&mut self) -> Result<i128, BinaryError> {
-        if self.remaining() >= 16 {
-            Ok(self.buffer.get_i128())
-        } else {
-            Err(UnexpectedEOF)
-        }
+        read_primitive!(self, 16, get_i128, mut)
     }
 
-    #[inline]
     pub fn read_i128_le(&mut self) -> Result<i128, BinaryError> {
-        if self.remaining() >= 16 {
-            Ok(self.buffer.get_i128_le())
-        } else {
-            Err(UnexpectedEOF)
-        }
+        read_primitive!(self, 16, get_i128_le, mut)
     }
 
-    #[inline]
     pub fn read_f32(&mut self) -> Result<f32, BinaryError> {
-        if self.remaining() >= 4 {
-            Ok(self.buffer.get_f32())
-        } else {
-            Err(UnexpectedEOF)
-        }
+        read_primitive!(self, 4, get_f32, mut)
     }
 
-    #[inline]
     pub fn read_f32_le(&mut self) -> Result<f32, BinaryError> {
-        if self.remaining() >= 4 {
-            Ok(self.buffer.get_f32_le())
-        } else {
-            Err(UnexpectedEOF)
-        }
+        read_primitive!(self, 4, get_f32_le, mut)
     }
 
-    #[inline]
     pub fn read_f64(&mut self) -> Result<f64, BinaryError> {
-        if self.remaining() >= 8 {
-            Ok(self.buffer.get_f64())
-        } else {
-            Err(UnexpectedEOF)
-        }
+        read_primitive!(self, 8, get_f64, mut)
     }
 
-    #[inline]
     pub fn read_f64_le(&mut self) -> Result<f64, BinaryError> {
-        if self.remaining() >= 8 {
-            Ok(self.buffer.get_f64_le())
-        } else {
-            Err(UnexpectedEOF)
-        }
+        read_primitive!(self, 8, get_f64_le, mut)
     }
 
-    #[inline]
     pub fn read_bool(&mut self) -> Result<bool, BinaryError> {
-        Ok(self.read_u8()? != 0)
+        self.read_u8().map(|v| v != 0)
     }
 
-    #[inline]
     pub fn read_exact(&mut self, dst: &mut [u8]) -> Result<(), BinaryError> {
         let len = dst.len();
         if self.remaining() >= len {
@@ -312,7 +197,7 @@ impl BinaryReader {
             Err(UnexpectedEOF)
         }
     }
-
+    
     #[inline]
     pub fn read_bytes(&mut self, len: usize) -> Result<Bytes, BinaryError> {
         if self.remaining() >= len {
@@ -321,12 +206,12 @@ impl BinaryReader {
             Err(UnexpectedEOF)
         }
     }
-    
+
     #[inline]
     pub fn read_remaining(&mut self) -> Bytes {
         self.buffer.split_off(0)
     }
-    
+
     pub fn read_var_u32(&mut self) -> Result<u32, BinaryError> {
         let mut value: u32 = 0;
         let mut shift: u32 = 0;
@@ -337,7 +222,7 @@ impl BinaryReader {
                 return Ok(value);
             }
             shift += 7;
-            if shift >= 32 {
+            if shift >= 35 {
                 return Err(InvalidData("VarInt overflow u32".to_string()));
             }
         }
@@ -358,7 +243,7 @@ impl BinaryReader {
                 return Ok(value);
             }
             shift += 7;
-            if shift >= 64 {
+            if shift >= 70 {
                 return Err(InvalidData("VarLong overflow u64".to_string()));
             }
         }
@@ -371,6 +256,10 @@ impl BinaryReader {
 
     pub fn read_string(&mut self) -> Result<String, BinaryError> {
         let len = self.read_var_u32()? as usize;
+        if len == 0 {
+            Ok::<String, BinaryError>(String::new()).expect("TODO: panic message");
+        }
+        
         let str_bytes = self.read_bytes(len)?;
         String::from_utf8(str_bytes.to_vec())
             .map_err(|e| InvalidData(format!("Invalid UTF-8 string: {}", e)))
@@ -420,7 +309,7 @@ impl BinaryReader {
             let port = self.read_u16()?;
             Ok(SocketAddr::new(IpAddr::V4(ip), port))
         } else if ip_ver == 6 {
-            if self.remaining() < (2 + 2 + 4 + 16 + 4) {
+            if self.remaining() < 28 {
                 return Err(UnexpectedEOF);
             }
 
@@ -508,7 +397,7 @@ impl BinaryWriter {
         self.buffer.put_u8(value);
         Ok(())
     }
-    
+
     #[inline]
     pub fn write_i8(&mut self, value: i8) -> Result<(), BinaryError> {
         self.buffer.put_i8(value);
@@ -652,7 +541,7 @@ impl BinaryWriter {
         self.buffer.put_f32(value);
         Ok(())
     }
-    
+
     #[inline]
     pub fn write_f32_le(&mut self, value: f32) -> Result<(), BinaryError> {
         self.buffer.put_f32_le(value);
@@ -664,7 +553,7 @@ impl BinaryWriter {
         self.buffer.put_f64(value);
         Ok(())
     }
-    
+
     #[inline]
     pub fn write_f64_le(&mut self, value: f64) -> Result<(), BinaryError> {
         self.buffer.put_f64_le(value);
@@ -750,7 +639,7 @@ impl BinaryWriter {
         }
         Ok(())
     }
-    
+
     pub fn write_raknet_address(&mut self, address: SocketAddr) -> Result<(), BinaryError> {
         match address {
             SocketAddr::V4(addr) => {
@@ -763,7 +652,7 @@ impl BinaryWriter {
             SocketAddr::V6(addr) => {
                 self.write_u8(6)?;
                 self.write_i16_le(23)?;
-                self.write_u16(addr.port())?; 
+                self.write_u16(addr.port())?;
                 self.write_u32(addr.flowinfo())?;
                 self.write_bytes(&addr.ip().octets())?;
                 self.write_u32(addr.scope_id())?;
